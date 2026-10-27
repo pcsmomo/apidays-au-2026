@@ -1,0 +1,841 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>apidays Australia 2026 Grid</title>
+<meta name="description" content="Unofficial room-by-time grid of every apidays Australia 2026 session (28-29 Oct, MCEC Melbourne), with search and saved picks.">
+<meta property="og:title" content="apidays Australia 2026 Grid">
+<meta property="og:description" content="Every apidays Australia 2026 session in one room-by-time grid. 28-29 Oct, MCEC Melbourne.">
+<style>
+:root { color-scheme: light; padding-top: env(safe-area-inset-top, 0px); padding-bottom: env(safe-area-inset-bottom, 0px); }
+body { margin: 0; }
+img { max-width: 100%; }
+[hidden] { display: none !important; }
+</style>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..800&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<style>
+/* Layout: app-height frame. Compact header, then one scroll pane holding a room × 5-minute grid with sticky room headers and a sticky time rail. */
+:root {
+  --bg: #eef1f6;
+  --surface: #ffffff;
+  --ink: #131926;
+  --muted: #5b6578;
+  --line: #dce1ea;
+  --line-strong: #b7c0cf;
+  --band: #dfe4ed;
+  --accent: #2b54d4;
+  --accent-ink: #ffffff;
+  --now: #d9412b;
+  --scrim: rgba(12, 17, 27, 0.48);
+
+  --ev-a-bg: #e7eefd; --ev-a-fg: #1b3583; --ev-a-edge: #bccbf3;
+  --ev-c-bg: #dcf2eb; --ev-c-fg: #0a574a; --ev-c-edge: #a6d9ca;
+  --ev-e-bg: #fbeed4; --ev-e-fg: #714305; --ev-e-edge: #ebcb8c;
+  --ev-s-bg: #f1e5f7; --ev-s-fg: #5a2770; --ev-s-edge: #d5b7e5;
+  --ev-g-bg: #fde3f0; --ev-g-fg: #8a1155; --ev-g-edge: #f1b2d1;
+
+  --f-display: "Archivo", "Helvetica Neue", Arial, sans-serif;
+  --f-body: "Archivo", "Helvetica Neue", Arial, sans-serif;
+  --f-mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
+
+  --slot: 20px;
+  --tc: 60px;
+  --colmin: 178px;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0e1219; --surface: #161b24; --ink: #e5e9f0; --muted: #98a3b5;
+    --line: #252c39; --line-strong: #3a4352; --band: #1c222d;
+    --accent: #7f9cff; --accent-ink: #0e1219; --now: #ff6b55; --scrim: rgba(0, 0, 0, 0.6);
+    --ev-a-bg: #1a2545; --ev-a-fg: #c0d0ff; --ev-a-edge: #2d3d6b;
+    --ev-c-bg: #11312b; --ev-c-fg: #94e2d0; --ev-c-edge: #1f4d43;
+    --ev-e-bg: #352910; --ev-e-fg: #f1cb80; --ev-e-edge: #57431b;
+    --ev-s-bg: #2b1c37; --ev-s-fg: #dfbcf2; --ev-s-edge: #483159;
+    --ev-g-bg: #3a142e; --ev-g-fg: #f7aed6; --ev-g-edge: #5e2249;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0e1219; --surface: #161b24; --ink: #e5e9f0; --muted: #98a3b5;
+  --line: #252c39; --line-strong: #3a4352; --band: #1c222d;
+  --accent: #7f9cff; --accent-ink: #0e1219; --now: #ff6b55; --scrim: rgba(0, 0, 0, 0.6);
+  --ev-a-bg: #1a2545; --ev-a-fg: #c0d0ff; --ev-a-edge: #2d3d6b;
+  --ev-c-bg: #11312b; --ev-c-fg: #94e2d0; --ev-c-edge: #1f4d43;
+  --ev-e-bg: #352910; --ev-e-fg: #f1cb80; --ev-e-edge: #57431b;
+  --ev-s-bg: #2b1c37; --ev-s-fg: #dfbcf2; --ev-s-edge: #483159;
+  --ev-g-bg: #3a142e; --ev-g-fg: #f7aed6; --ev-g-edge: #5e2249;
+  color-scheme: dark;
+}
+@media (max-width: 640px) {
+  :root { --tc: 46px; --colmin: 158px; }
+}
+
+html { height: 100%; box-sizing: border-box; }
+*, *::before, *::after { box-sizing: inherit; }
+body {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--f-body);
+  font-size: 14px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 0;
+}
+button, input { font: inherit; color: inherit; }
+a { color: var(--accent); }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+/* ---------- header ---------- */
+.top {
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding-block: 16px 12px;
+}
+.eyebrow {
+  margin: 0;
+  font-family: var(--f-mono);
+  font-size: 11.5px;
+  letter-spacing: 0.04em;
+  color: var(--muted);
+}
+h1 {
+  margin: 2px 0 0;
+  font-family: var(--f-display);
+  font-weight: 800;
+  font-stretch: 118%;
+  font-size: clamp(22px, 3.2vw, 30px);
+  line-height: 1.05;
+  letter-spacing: -0.01em;
+  text-wrap: balance;
+}
+h1 small {
+  font-weight: 500;
+  font-stretch: 100%;
+  font-size: 0.55em;
+  color: var(--muted);
+  letter-spacing: 0;
+  margin-left: 6px;
+}
+.controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+.tabs {
+  display: inline-flex;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  padding: 3px;
+  gap: 2px;
+}
+.tabs button {
+  border: 0;
+  background: none;
+  border-radius: 6px;
+  padding: 6px 12px;
+  cursor: pointer;
+  font-weight: 650;
+  font-stretch: 95%;
+  white-space: nowrap;
+}
+.tabs button span { font-weight: 450; color: var(--muted); margin-left: 4px; }
+.tabs button[aria-selected="true"] { background: var(--ink); color: var(--bg); }
+.tabs button[aria-selected="true"] span { color: inherit; opacity: 0.75; }
+.search {
+  flex: 1 1 220px;
+  min-width: 0;
+  max-width: 360px;
+  border: 1px solid var(--line);
+  background: var(--surface);
+  border-radius: 9px;
+  padding: 8px 12px;
+}
+.search::placeholder { color: var(--muted); }
+.pickbtn {
+  border: 1px solid var(--line);
+  background: var(--surface);
+  border-radius: 9px;
+  padding: 7px 12px;
+  cursor: pointer;
+  font-weight: 650;
+  font-stretch: 95%;
+  white-space: nowrap;
+}
+.pickbtn[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+.pickbtn .n {
+  font-family: var(--f-mono);
+  font-weight: 500;
+  font-size: 12px;
+  margin-left: 4px;
+  opacity: 0.8;
+}
+.note {
+  margin: 0;
+  font-size: 12px;
+  color: var(--muted);
+  line-height: 1.4;
+}
+
+/* ---------- grid ---------- */
+.scroller {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: auto;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-bottom: 0;
+  border-radius: 10px 10px 0 0;
+  overscroll-behavior: contain;
+}
+.grid {
+  display: grid;
+  position: relative;
+  width: 100%;
+  font-variant-numeric: tabular-nums;
+}
+.corner, .rh {
+  position: sticky;
+  top: 0;
+  grid-row: 1;
+  background: var(--surface);
+  border-bottom: 1px solid var(--line-strong);
+}
+.corner {
+  left: 0;
+  z-index: 7;
+  grid-column: 1;
+  display: flex;
+  align-items: flex-end;
+  justify-content: flex-end;
+  padding: 0 6px 8px;
+  font-family: var(--f-mono);
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+  border-right: 1px solid var(--line);
+}
+.rh {
+  z-index: 6;
+  padding: 9px 10px 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  min-width: 0;
+  border-left: 1px solid var(--line);
+}
+.rh b {
+  font-family: var(--f-display);
+  font-weight: 750;
+  font-stretch: 108%;
+  font-size: 15px;
+  letter-spacing: -0.005em;
+}
+.chip {
+  align-self: flex-start;
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1;
+  padding: 4px 7px;
+  border-radius: 999px;
+  background: var(--ev-bg);
+  color: var(--ev-fg);
+  border: 1px solid var(--ev-edge);
+  white-space: nowrap;
+}
+[data-ev="a"] { --ev-bg: var(--ev-a-bg); --ev-fg: var(--ev-a-fg); --ev-edge: var(--ev-a-edge); }
+[data-ev="c"] { --ev-bg: var(--ev-c-bg); --ev-fg: var(--ev-c-fg); --ev-edge: var(--ev-c-edge); }
+[data-ev="e"] { --ev-bg: var(--ev-e-bg); --ev-fg: var(--ev-e-fg); --ev-edge: var(--ev-e-edge); }
+[data-ev="s"] { --ev-bg: var(--ev-s-bg); --ev-fg: var(--ev-s-fg); --ev-edge: var(--ev-s-edge); }
+[data-ev="g"] { --ev-bg: var(--ev-g-bg); --ev-fg: var(--ev-g-fg); --ev-edge: var(--ev-g-edge); }
+
+.tm {
+  grid-column: 1;
+  position: sticky;
+  left: 0;
+  z-index: 4;
+  background: var(--surface);
+  border-right: 1px solid var(--line);
+  font-family: var(--f-mono);
+  font-size: 11px;
+  color: var(--muted);
+  text-align: right;
+  padding: 3px 6px 0 0;
+  line-height: 1;
+}
+.tm.q { font-size: 9.5px; opacity: 0.7; }
+.tm.h { color: var(--ink); font-weight: 600; }
+.hl { grid-column: 2 / -1; border-top: 1px dashed var(--line); z-index: 0; pointer-events: none; }
+.hl.h { border-top: 1px solid var(--line-strong); }
+.hl.half { border-top-style: solid; }
+.vc { grid-row: 2 / -1; border-left: 1px solid var(--line); z-index: 0; pointer-events: none; }
+
+.band {
+  grid-column: 2 / -1;
+  z-index: 1;
+  background: repeating-linear-gradient(135deg, var(--band) 0 6px, transparent 6px 12px);
+  display: flex;
+  align-items: center;
+  min-width: 0;
+}
+.band span {
+  position: sticky;
+  left: calc(var(--tc) + 8px);
+  margin-left: 8px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 3px 8px;
+  font-size: 11px;
+  font-weight: 650;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted);
+  white-space: nowrap;
+}
+.band span i { font-style: normal; font-family: var(--f-mono); font-weight: 500; letter-spacing: 0; margin-left: 6px; }
+.band.end { background: none; border-top: 2px solid var(--line-strong); align-items: flex-start; padding-top: 6px; }
+
+.s {
+  z-index: 2;
+  position: relative;
+  justify-self: start;
+  width: calc(100% / var(--lanes, 1) - 6px);
+  margin: 2px 0 2px calc(100% / var(--lanes, 1) * var(--lane, 0) + 3px);
+  min-width: 0;
+  overflow: hidden;
+  border-radius: 7px;
+  background: var(--ev-bg);
+  color: var(--ev-fg);
+  border: 1px solid var(--ev-edge);
+  padding: 5px 7px 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  cursor: pointer;
+  transition: opacity 0.15s, filter 0.15s;
+}
+.s:hover { border-color: var(--ev-fg); }
+.s:focus-visible { outline: 2px solid var(--ink); outline-offset: 1px; }
+.s.picked { border-color: var(--accent); box-shadow: inset 0 0 0 1.5px var(--accent); }
+.s.dim { opacity: 0.25; filter: saturate(0.2); }
+.s .meta {
+  display: flex;
+  gap: 6px;
+  align-items: baseline;
+  font-family: var(--f-mono);
+  font-size: 10.5px;
+  line-height: 13px;
+  margin-right: 18px;
+  white-space: nowrap;
+  overflow: hidden;
+  opacity: 0.85;
+}
+.s .badge {
+  font-family: var(--f-body);
+  font-size: 9.5px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.s .ttl {
+  font-weight: 650;
+  font-stretch: 90%;
+  font-size: 13px;
+  line-height: 16px;
+  color: var(--ink);
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  overflow-wrap: anywhere;
+}
+.s .ttl.tba { color: var(--muted); font-style: italic; font-weight: 500; }
+.s .spk {
+  font-size: 11.5px;
+  line-height: 15px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.s .trk {
+  margin-top: auto;
+  font-size: 9.5px;
+  line-height: 13px;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  opacity: 0.8;
+}
+.s.mini { padding: 0 7px; justify-content: center; }
+.s.mini .ttl { -webkit-line-clamp: 1; font-size: 12px; line-height: 14px; }
+.s.mini .ttl b { font-family: var(--f-mono); font-weight: 500; font-size: 10.5px; color: var(--ev-fg); margin-right: 6px; }
+.star {
+  position: absolute;
+  top: 1px;
+  right: 1px;
+  width: 24px;
+  height: 22px;
+  border: 0;
+  background: none;
+  padding: 0;
+  cursor: pointer;
+  font-size: 14px;
+  line-height: 22px;
+  color: var(--ev-fg);
+  opacity: 0.55;
+}
+.star:hover { opacity: 1; }
+.s.picked .star { color: var(--accent); opacity: 1; }
+
+.now {
+  grid-column: 1 / -1;
+  align-self: start;
+  z-index: 5;
+  height: 0;
+  border-top: 2px solid var(--now);
+  pointer-events: none;
+}
+.now span {
+  position: sticky;
+  left: 0;
+  display: inline-block;
+  transform: translateY(-60%);
+  background: var(--now);
+  color: #ffffff;
+  font-family: var(--f-mono);
+  font-size: 10.5px;
+  font-weight: 600;
+  padding: 2px 5px;
+  border-radius: 4px;
+}
+
+/* ---------- dialog ---------- */
+dialog {
+  width: min(580px, calc(100% - 32px));
+  max-height: min(85vh, 760px);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 0;
+  background: var(--surface);
+  color: var(--ink);
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.25);
+}
+dialog::backdrop { background: var(--scrim); }
+.dlg-in { padding: 20px 22px 18px; display: flex; flex-direction: column; gap: 14px; }
+.d-meta { font-family: var(--f-mono); font-size: 12px; color: var(--muted); line-height: 1.5; }
+dialog h2 {
+  margin: 0;
+  font-family: var(--f-display);
+  font-weight: 750;
+  font-stretch: 100%;
+  font-size: 21px;
+  line-height: 1.2;
+  text-wrap: balance;
+}
+.d-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.d-chips .chip.plain { --ev-bg: transparent; --ev-fg: var(--muted); --ev-edge: var(--line); }
+.d-spk { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.d-spk li { display: flex; flex-direction: column; gap: 1px; }
+.d-spk b { font-weight: 650; }
+.d-spk span { font-size: 13px; color: var(--muted); }
+.d-desc { font-size: 14.5px; line-height: 1.55; max-width: 65ch; }
+.d-desc p { margin: 0 0 10px; white-space: pre-line; }
+.d-desc p:last-child { margin-bottom: 0; }
+.d-desc.empty { color: var(--muted); font-style: italic; }
+.d-actions { display: flex; gap: 8px; justify-content: flex-end; flex-wrap: wrap; border-top: 1px solid var(--line); padding-top: 14px; }
+.d-actions button {
+  border: 1px solid var(--line);
+  background: var(--bg);
+  border-radius: 9px;
+  padding: 8px 14px;
+  cursor: pointer;
+  font-weight: 650;
+}
+.d-actions button.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+
+@media (prefers-reduced-motion: reduce) {
+  .s { transition: none; }
+}
+</style>
+</head>
+<body>
+<header class="top">
+  <div>
+    <p class="eyebrow">28–29 OCT 2026 · MCEC, MELBOURNE · ALL TIMES AEDT</p>
+    <h1>apidays Australia 2026 <small>room × time</small></h1>
+  </div>
+  <div class="controls">
+    <div class="tabs" role="tablist" aria-label="Conference day">
+      <button type="button" role="tab" id="tab-2026-10-28" data-day="2026-10-28" aria-selected="true">Day 1<span>Wed 28</span></button>
+      <button type="button" role="tab" id="tab-2026-10-29" data-day="2026-10-29" aria-selected="false">Day 2<span>Thu 29</span></button>
+    </div>
+    <input class="search" id="q" type="search" placeholder="Search talks, speakers, companies" autocomplete="off" aria-label="Search sessions">
+    <button type="button" class="pickbtn" id="picks" aria-pressed="false">★ My picks<span class="n" id="pickcount">0</span></button>
+  </div>
+  <p class="note">Unofficial view of the <a href="https://www.apidays.global/events/australia#agenda" target="_blank" rel="noopener">official agenda</a>, captured 27 Oct 2026. Rooms can change, so check the official agenda on the day. Tap a session for details, and ☆ to save it on this device.</p>
+</header>
+
+<main class="scroller" id="scroller">
+  <div class="grid" id="grid" role="region" aria-label="Agenda grid"></div>
+</main>
+
+<dialog id="dlg" aria-labelledby="d-title">
+  <div class="dlg-in">
+    <div class="d-meta" id="d-meta"></div>
+    <h2 id="d-title"></h2>
+    <div class="d-chips" id="d-chips"></div>
+    <ul class="d-spk" id="d-spk"></ul>
+    <div class="d-desc" id="d-desc"></div>
+    <div class="d-actions">
+      <button type="button" id="d-star" class="primary"></button>
+      <button type="button" id="d-close">Close</button>
+    </div>
+  </div>
+</dialog>
+
+<script type="application/json" id="data">[{"id":4143,"day":"2026-10-28","start":"08:15","end":"09:15","room":"Room 107","title":"Women in API Breakfast","type":"conference","event":["API Economy Summit"],"track":[],"speakers":[],"desc":""},{"id":4152,"day":"2026-10-28","start":"09:00","end":"09:15","room":"","title":"Welcome Breakfast","type":"break","event":["Apidays","The Executive AI Security Forum"],"track":[],"speakers":[],"desc":""},{"id":4215,"day":"2026-10-28","start":"09:15","end":"10:00","room":"Room 112","title":"Session 1: The EU AI Act","type":"talk","event":["The Executive AI Security Forum"],"track":["The Executive AI Security Forum"],"speakers":[{"n":"Chuck Herrin","c":"Herrin Advisory","j":"Founder and Principal Consultant"}],"desc":""},{"id":4153,"day":"2026-10-28","start":"09:20","end":"09:25","room":"Room 109 + 110","title":"Opening Remarks","type":"opening_remarks","event":["Apidays"],"track":[],"speakers":[{"n":"Mehdi Medjaoui","c":"Founder and Chairman of Apidays Conferences","j":"Author of Continuous API Management"}],"desc":""},{"id":4179,"day":"2026-10-28","start":"09:25","end":"09:45","room":"Room 109 + 110","title":"AIOps at CBA: When Every Minute Matters","type":"keynote","event":["Apidays"],"track":["keynote"],"speakers":[{"n":"Richa Nagpal (Rinki)","c":"CommBank","j":"Head of Engineering, Payments"}],"desc":"This is our journey of how we built an agentic system to enable automatic incident resolution reducing MTTR significantly. In this talk we will share learnings and strategies on how we solved this at scale and creating a common framework for future adoption."},{"id":4066,"day":"2026-10-28","start":"09:45","end":"10:05","room":"Room 109 + 110","title":"Monetizing Partner Ecosystems via APIs","type":"keynote","event":["Apidays"],"track":["keynote"],"speakers":[{"n":"Harish Kelath","c":"HCLTech","j":"Director, Digital Business Alliances - APJ"}],"desc":"APIs have evolved from technical integration tools into the foundational building blocks for Go-To-Market strategies and Global Systems Integrator ecosystems. This proposal focuses on how to build, govern, and monetize API partnerships across diverse markets to drive measurable return on investment. The audience will learn how to align API architecture with revenue goals, structure scalable co-sell motions, and track ecosystem success metrics beyond basic API call volumes."},{"id":4057,"day":"2026-10-28","start":"10:00","end":"10:30","room":"","title":"Coffee Break / Networking / Expo","type":"break","event":["Apidays","Cloud Native Summit","The Executive AI Security Forum"],"track":[],"speakers":[],"desc":""},{"id":4216,"day":"2026-10-28","start":"10:15","end":"11:00","room":"Room 112","title":"Session 2: America's AI Policy Conundrum","type":"talk","event":["The Executive AI Security Forum"],"track":["The Executive AI Security Forum"],"speakers":[{"n":"Chuck Herrin","c":"Herrin Advisory","j":"Founder and Principal Consultant"}],"desc":""},{"id":4259,"day":"2026-10-28","start":"10:30","end":"10:55","room":"Room 106","title":"Who's Accountable When the Agent Gets It Wrong? Governance, risk and the accountability gap in the agentic enterprise","type":"keynote","event":["Cloud Native Summit"],"track":[],"speakers":[{"n":"BMK Lakshminarayanan","c":"SECTION6","j":"Transformation Architect"}],"desc":"You can’t govern autonomous systems simply by piling on approval gates. What happens when an AI agent makes decisions and takes action faster than your organisation can review them—and who owns the consequences when it gets something wrong? This session explores AI agents through a governance, risk and compliance (GRC) lens. We’ll examine how to design accountability into agentic systems from the outset: clear ownership, defined operating boundaries, traceable decisions, and tamper-evident audit trails. The goal is not merely to record what happened, but to establish who authorised the action, whether it stayed within its mandate, and who is responsible for responding when it did not. The central question: how do we enable autonomous action without creating an accountability gap?"},{"id":4220,"day":"2026-10-28","start":"10:30","end":"10:55","room":"Room 103","title":"Don't Waste Your Backpressure: Engineering Better AI Harnesses as a Team","type":"talk","event":["Apidays"],"track":["Enterprise API & AI Deployments"],"speakers":[{"n":"Dasith Wijesiriwardena","c":"Microsoft","j":"Principal Software Engineer"}],"desc":"An AI coding agent can produce a convincing change and still leave your\nteam explaining the same conventions, checking the same things, and catching\nthe same mistakes. One engineer adds a prompt, another adds a rule, and the\nnext session starts the argument again. Everyone has a favourite setup.\nThe team still has the same problem. We are giving agents plenty of\nfeedback, but how much of it helps anyone beyond the person typing it?\n\nFrom a forward-deployed engineer's perspective, I'll explore how teams can\nbuild and improve a shared engineering harness: the tools, context, and\ncontrols around their coding agents. We'll look at how to manufacture useful\nbackpressure so agents can correct their work before it reaches a human,\nthen use telemetry to find where that feedback is helping and where it is\ncreating expensive friction. I'll show how to refine noisy sensors, move\nrepeatable checks from model judgment into tools, and reduce token waste\nwithout quietly handing more work back to reviewers. You'll leave with a\npractical improvement cycle for your team: find a recurring failure, improve\nthe harness, measure the result, and share what works. The goal isn't more\nrules. It's to stop paying for the same lesson twice."},{"id":4322,"day":"2026-10-28","start":"10:30","end":"11:20","room":"Room 101 + 102","title":"Hack the Chatbot: Prompts, Promos and Protection","type":"workshop","event":["Apidays"],"track":["Workshops"],"speakers":[{"n":"Susum Tang","c":"Datadog","j":"Solutions Engineer"}],"desc":"AI chatbots are now the front door to your APIs, and they can be tricked. In this 50-minute hands-on workshop, you’ll use your own phone to try to talk “Mel”, a Melbourne online store’s shopping assistant, into handing over a discount code it was told to keep secret. Round by round, the defences get stronger. You’ll see why fixed rules can’t stop prompt injection and jailbreaks, why AI guardrails alone still leave gaps, and why API and application security matter inside the app, not just at the edge. Then we’ll switch hats and investigate what happened end to end, following a single request from the browser through the APIs to the AI agent’s decisions. No security or AI background needed. Just bring your phone."},{"id":4144,"day":"2026-10-28","start":"10:30","end":"11:20","room":"Room 107","title":"Making use of the Kin Score in the Australian/ANZ region","type":"facilitated_roundtable","event":["API Economy Summit"],"track":[],"speakers":[{"n":"Kin Lane","c":"API Evangelist","j":"Founder"}],"desc":"Building an API product is only part of the story. Getting it discovered, adopted and generating commercial value takes more than good technology.\n\nWith AI reshaping how organisations find and use digital services, and regulation changing how they share data, what does it take to turn API ambitions into business results? This API Economy Roundtable brings together commercial, digital and technical practitioners to explore these questions through practical examples and facilitated conversations.\n\nThis session is a hands-on exploration of what an independent, agent-generated assessment of external-facing APIs can tell us about agentic discoverability, usability, and AI-readiness.\n\nIn conversation with Kin Lane, API Evangelist, we will dig into the he Kin Score and its importance in the region.\n\nThe Kin Score is a 0–100 composite of governance fundamentals across six base facets: contracts, documentation, security, support, operations and discoverability, with: a regulatory layer for banking, health, payments, insurance, securities, energy, education, government and telecom; and an open source layer where the product is itself a public repository.\n\nWe'll explore using Kin Score analysis and insights to assess potential partners, benchmark different API offerings, and strengthen the case for investment in API/MCP roadmaps.\n\nThe conversation will be facilitated by Claire Barrett and Shaugh McIntosh."},{"id":4168,"day":"2026-10-28","start":"10:30","end":"11:20","room":"Room 105","title":"We taught AI Agents to cheat - we didn't realise how good they'd be at finding all the gaps we left open","type":"workshop","event":["Apidays"],"track":["Workshops"],"speakers":[{"n":"Claudio Tag","c":"IBM APAC","j":"CTO Automation"}],"desc":"Recent security incidents have exposed a dangerous pattern: AI agents complete their objectives by circumventing the very controls designed to contain them. We built agents to be resourceful, persistent and goal-driven. It turns out they're very good at it — even when the path to reach the goal isn't what we had envisaged.\n\nIn regulated industries, this isn't an edge case. An agent that finds a gap doesn't just create a security incident. It creates a compliance failure, an audit nightmare and a trust crisis — simultaneously.\n\nRegulated organisations require more than hopeful prompting and application-layer rules. Every agent must carry a verified, lifecycle-governed identity — and policy enforcement points must act as circuit breakers between autonomous agents, their brains, and the systems they touch.\nAI Safety demands distributed, layered Kill Switches.\n\nThe most important feature of any AI agent today isn't what it can do. It's whether you can stop it in time."},{"id":4203,"day":"2026-10-28","start":"10:30","end":"11:20","room":"Room 104","title":"Risk-Proof Your AI: The New API Governance Playbook","type":"workshop","event":["Apidays"],"track":["Workshops"],"speakers":[{"n":"Markus Müller","c":"Boomi","j":"Global CTO - API Management"}],"desc":"Agentic AI is revolutionizing industries—but with greater agentic autonomy comes greater risk. Strong API governance provides the unified controls needed to keep AI agents secure, compliant, and scalable, ensuring they deliver business value safely.\n\nBuilding on the strategies from “Govern APIs to Turn AI Ambitions into Production Reality,” this session will show you how to architect for federation, enforce governance, and securely leverage agentic protocols like MCP. You’ll see real-world examples from manufacturing, healthcare, transportation & logistics, and financial services—where Boomi API Management powers secure, agentic AI at scale.\n\nIn this workshop, guided by Markus Müller, Global Field CTO, API Management at Boomi, you’ll learn how to:\n\nDesign, expose and curate APIs as trusted tools for AI agents using protocols like MCP\nApply governance and security controls to ensure your APIs and agents are enterprise-ready\nMeasure and optimize your APIs and agents for business impact and ROI\n\nWalk away with a proven playbook—ready to protect your business, fuel API growth, and lead confidently in the age of agentic AI."},{"id":4221,"day":"2026-10-28","start":"10:55","end":"11:20","room":"Room 103","title":"The Enterprise Knowledge Graph","type":"talk","event":["Apidays"],"track":["Enterprise API & AI Deployments"],"speakers":[{"n":"Anikesh Sasmal","c":"Wipro","j":"Senior Solution Architect - Managing Consultant"}],"desc":"Every network operator wants autonomous operations. Most are wiring AI agents directly to dozens of element-manager, telemetry and ticketing APIs. They are discovering that agents fail not for lack of intelligence, but for lack of meaning. An alarm, a rectifier, a service polygon, a speed-test result and a work order can all describe one event, yet no API knows it.\n\nThis talk argues that the path to Autonomous Network Operations (ANO) runs through an ontology, not another integration layer. I'll draw on architecture work in a national-scale broadband network to show how an Enterprise Knowledge Graph (EKG) becomes the API contract between systems, humans and agents. OWL2 models define what things are. SHACL shapes enforce what \"good\" looks like. PROV-O records why a decision was made. Virtual graphs federate live sources without copying them.\n\nYou'll see three patterns in practice:\n\ncomposite diagnostic APIs that bundle atomic tests behind one governed threshold set\nsemantic APIs and MCP tools that let agents follow cause-and-effect chains (power fault → battery → access node → service impact) instead of guessing\na command-centre digital twin that moves teams from detection-after-impact to sense → understand → predict → simulate → act\n\nYou'll leave with three things:\n\na reference architecture\na maturity path from reactive to autonomous\nthe governance guardrails (versioned thresholds, provenance, human-on-the-loop) that make agent-driven operations safe enough to trust"},{"id":4285,"day":"2026-10-28","start":"11:00","end":"11:25","room":"Room 106","title":"Know Your Agents, Control Their Actions: Governing the Identity, Behavior, and Spend of Production AI","type":"talk","event":["Cloud Native Summit"],"track":[],"speakers":[{"n":"Derric Gilling","c":"WSO2","j":"VP and GM, API Platform BU"}],"desc":"An agent with the right credentials, talking to the right systems, can still do the wrong thing. In Australia, most organizations say agent deployment is already outpacing their ability to govern it, and roughly half have watched an agent take an incorrect action during a pilot. The gap isn't identity or access. It's everything between a valid credential and a completed action.\n\nProduction AI needs three things governed. Who the agent is: a first-class identity and audit trail, not a shared service account. What it does: scoped access, plus runtime guardrails that catch the jailbreak an authorized agent still shouldn't act on. And what it spends: cost attributed to each agent, not to an API key. Assembling those from three separate products gives you three policy languages, three consoles, and no answer to the question every incident review asks: what did this agent do, and why was it allowed to?\n\nA single enforcement point answers it. You'll leave with a concrete pattern to put in place before your next pilot becomes a production incident."},{"id":4217,"day":"2026-10-28","start":"11:00","end":"11:45","room":"Room 112","title":"Session 3: The Realities of AI-Powered Offense","type":"talk","event":["The Executive AI Security Forum"],"track":["The Executive AI Security Forum"],"speakers":[{"n":"Chuck Herrin","c":"Herrin Advisory","j":"Founder and Principal Consultant"}],"desc":""},{"id":4196,"day":"2026-10-28","start":"11:20","end":"11:45","room":"Room 103","title":"MCP Isn't Enough: Why Agents Needed an Event Loop, Not Just an API","type":"talk","event":["Apidays"],"track":["Enterprise API & AI Deployments"],"speakers":[{"n":"Saul Caganoff","c":"Deloitte Australia","j":"Managing Director"}],"desc":"Agentic workflows need more than MCP-wrapped APIs: they must respond when context changes. Using Boyd’s OODA loop, this talk shows why event-driven architecture is essential for AI processes."},{"id":4157,"day":"2026-10-28","start":"11:20","end":"12:10","room":"Room 105","title":"Legacy to Agent-ready tools in 5 mins: Apigee agent skills, MCP registry and MCP transcoding","type":"workshop","event":["Apidays"],"track":["Workshops"],"speakers":[{"n":"Joey Wong","c":"Google Cloud","j":"Customer Engineer"},{"n":"Ashish Kumar","c":"Google","j":"AuNZ Account Executive"}],"desc":"Turn legacy APIs into agent-ready tools in 5 minutes. Use Apigee agent skills, MCP registry, and live MCP transcoding to seamlessly connect enterprise services to AI agents without refactoring."},{"id":4289,"day":"2026-10-28","start":"11:20","end":"12:10","room":"Room 104","title":"Build, Connect and Control your Agents with WSO2 Agentic Enterprise Fabric","type":"workshop","event":["Apidays"],"track":["Workshops"],"speakers":[{"n":"Shazni Nazeer","c":"WSO2","j":"Director & Senior Enterprise Architect"}],"desc":"AI agents are moving beyond experimentation and becoming part of how enterprises build applications, automate processes, and interact with customers and systems. But deploying agents at scale introduces new challenges: How do you build agents efficiently? How do you securely connect them to enterprise data, APIs, applications, and other agents? And how do you maintain control, security, governance, and visibility as agentic systems grow?\n\nIn this hands-on workshop, explore how WSO2 Agentic Enterprise Fabric provides a unified foundation to Build, Connect, and Control enterprise AI agents. See how agents can be created and orchestrated, connected securely to enterprise capabilities, and governed with the security, identity, policies, and observability required for production use.\n\nThrough practical walkthrough and real-world scenarios, discover how enterprises can move from individual AI experiments to secure, connected, and governable agentic applications, while leveraging the APIs, integrations, and systems they already have."},{"id":4156,"day":"2026-10-28","start":"11:20","end":"12:10","room":"Room 101 + 102","title":"APIs as the Trust Layer: Building Accountable AI with Auth0","type":"workshop","event":["Apidays"],"track":["Workshops"],"speakers":[{"n":"Toby Allen","c":"Auth0","j":"Senior Solutions Engineer"}],"desc":"As AI moves from experiments to enforcement, Auth0's API-first identity platform brings accountability, FGA, machine identity & audit logs without slowing developer velocity."},{"id":4261,"day":"2026-10-28","start":"11:30","end":"11:55","room":"Room 106","title":"Logs, Metrics, Traces... and Models: The Evolution of Observability","type":"talk","event":["Cloud Native Summit"],"track":[],"speakers":[{"n":"Diana Omuoyo","c":"Splunk","j":""}],"desc":"AI systems have introduced new operational challenges: unpredictable model behaviour, data drift, prompt variability, escalating infrastructure costs, regulatory obligations, and growing concerns around data sovereignty and security.\n\nThis session explores how observability practices need to evolve for operating AI at scale. Drawing on real-world lessons from modern observability practices, we will examine the five critical pillars of AI observability: Infrastructure Health, Model Performance, Data Quality, Cost & Security.\n\nAttendees will learn how to build end-to-end visibility across the entire AI lifecycle. The presentation will demonstrate how telemetry, tracing, logging, and AI-specific signals can be combined to detect model degradation, identify security risks, validate compliance requirements, and provide actionable insights for platform and operations teams.\n\nWhether you are responsible for platform engineering, security operations, or AI infrastructure, this talk will provide a practical framework for implementing observability strategies that enable reliable, effecient and secure AI systems."},{"id":4145,"day":"2026-10-28","start":"11:30","end":"13:00","room":"Room 107","title":"The API Economy in an AI-everywhere world","type":"facilitated_roundtable","event":["API Economy Summit"],"track":[],"speakers":[{"n":"Erik Tveitnes","c":"REA Group","j":"API Lead"},{"n":"William Fettke","c":"Telstra","j":"Product Owner: APIs & Developer Ecosystem"}],"desc":"Building an API product is only part of the story. Getting it discovered, adopted and generating commercial value takes more than good technology.\n\nWith AI reshaping how organisations find and use digital services, and regulation changing how they share data, what does it take to turn API ambitions into business results?\n\nWhat happens after “build it and they will come”? How do API products reach customers through partnerships and evolving distribution channels? And are regulation, privacy and digital identity simply a growing cost of doing business—or an overlooked source of opportunity?\n\nLed by different, yet complementary, experiences at Telstra and REA Group, Will Fettke and Erik Tveitnes will share their case studies and lessons behind their organisations' strategic commitment, operating models and investment decisions that power API-enabled growth and partner ecosystems.\n\nRather than a series of presentations to sit back and watch, this session follows the popular format for all our API Economy conversations. You’ll get to hear from Will and Erik; while also exchanging experiences, testing ideas, and exploring practical questions with peers in small, facilitated groups.\n\nCome ready to contribute your challenges and lessons—and leave with fresh perspectives, useful connections and ideas to apply to your own organisation’s participation in the API economy.\n\nThe conversations will be facilitated by Claire Barrett and Shaugh McIntosh.\n\n[Speaker profiles]\n\nWill Fettke, Product Owner (APIs & Developer Ecosystem) at Telstra leads B2B2X APIs and Experience. He leads the team defining Telstra’s monetised API strategy and realising it through the development of API products and the customer portal they are exposed, managed and supported on dev.telstra.com.\n\nErik Tveitnes, API Lead at REA Group, has been at the forefront of API product strategy and build-out in Australia's property tech ecosystems for 9 years. He has overseen the development of API-powered digital products and API economy participation in the sector, bringing REA Group strategies to life through digital platform design and development."},{"id":4213,"day":"2026-10-28","start":"11:45","end":"12:10","room":"Room 103","title":"A Product Manager's Journey Prototyping with AI (Front and Back End)","type":"talk","event":["Apidays"],"track":["Enterprise API & AI Deployments"],"speakers":[{"n":"Peter Marelas","c":"New Relic","j":"Senior Product Management Director"}],"desc":"In three weeks, a product manager using Claude Code built a root cause analysis engine for distributed systems. It has a web front end, a web API and over 30,000 lines of code. This talk walks through each step, from research to a working prototype and the tricks applied along the way to speed up the process."},{"id":4218,"day":"2026-10-28","start":"11:45","end":"12:30","room":"Room 112","title":"Session 4: Beyond the Hype Cycle","type":"talk","event":["The Executive AI Security Forum"],"track":["The Executive AI Security Forum"],"speakers":[{"n":"Chuck Herrin","c":"Herrin Advisory","j":"Founder and Principal Consultant"}],"desc":""},{"id":4260,"day":"2026-10-28","start":"12:00","end":"12:25","room":"Room 106","title":"Conformance for Inference: How We Reduced Bad Deploys on a GPU Platform","type":"talk","event":["Cloud Native Summit"],"track":[],"speakers":[{"n":"Hrittik Roy","c":"vClustert","j":"Software Engineer | CNCF Ambassador"}],"desc":"Inference on GPUs fails in repetitive ways: wrong image or artifact, mismatched CUDA or runtime, undersized GPU memory, bad resource requests, or a model that passes offline checks but regresses under real traffic. On a shared k8s GPU platform, those mistakes become multi-tenant incidents - noisy neighbors, OOMKills, SLO breaches, and rollbacks that waste accelerator time.\n\nThis talk describes how one team built conformance for inference workloads, checks applied before production traffic, covering container and model artifacts, GPU capacity and visibility contracts, health and readiness semantics, and minimum observability (metrics/traces where used).\n\nAttendees leave with a practical checklist they can reuse: how to separate \"\"builds\"\" from \"\"serving\"\" conformance, how to catch regressions early, and how to align GPU scheduling and quotas with inference SLOs.\n\nWe will share what worked, what did not, what teams pushed back on, and a short checklist for platform and app owners."},{"id":4078,"day":"2026-10-28","start":"12:10","end":"12:35","room":"Room 103","title":"Why 93% of Enterprises Can’t Scale Agentic AI - and How the API Execution Layer Fixes It","type":"talk","event":["Apidays"],"track":["Enterprise API & AI Deployments"],"speakers":[{"n":"Asif Waquar","c":"Munich Re","j":"Solutions Architect"},{"n":"Khilitchandra Prajapati","c":"Power Tech Consulting","j":"Senior ICT Consultant"}],"desc":"Everyone’s talking about AI agents. Very few are talking about why most of them fail in production.\nHere’s what I have seen: organisations pour months into building clever agents, pick the right models, nail the orchestration - and then hit a wall the moment they try to go live. The agents can’t reliably talk to backend systems. There’s no governance over what they’re calling or how often. Observability is an afterthought. And when you’re operating across multiple countries with different data residency rules and regulatory expectations, it gets messy fast.\nThe missing piece isn’t the agent. It’s the API layer underneath it.\nThis session is a practical, architecture-driven walkthrough of what it actually takes to build an API execution layer that agentic systems can rely on. I’ll draw from my experience delivering technology across multiple markets where “just deploy it” is never as simple as it sounds.\n\nWhat I will Cover\nThe gap nobody’s fixing: Why most agentic AI pilots stall at scale - fragmented APIs, zero governance, no visibility into what agents are actually doing. The model isn’t the bottleneck. The plumbing is.\nMaking legacy systems agent-ready: How to expose existing REST APIs as MCP servers so agents can discover and consume them autonomously, without rewriting everything from scratch.\nGovernance that doesn’t slow you down: Token limits, content safety, PII detection, authentication for agent-to-API calls - all applied as policies at the gateway level. One control plane for traditional APIs, MCP tools, and agent APIs.\nMulti-region, multi-regulation reality: Data residency in Australia is not the same as in Singapore or the UAE. I will walk through how to design an API layer that respects regional rules without duplicating your entire architecture per market.\n\nKey Takeaways\nAttendees will walk away understanding why the API execution layer is the single biggest factor in whether agentic AI scales or stalls, how to make legacy systems agent-consumable without a full rewrite, what governance looks like when your API consumers are autonomous agents instead of developers, and a practical multi-region architecture pattern they can adapt to their own context."},{"id":4138,"day":"2026-10-28","start":"12:10","end":"12:35","room":"Room 105","title":"Let Your Api Talk","type":"talk","event":["Apidays"],"track":["Technical Deep Dives"],"speakers":[{"n":"Randi Ratnayake","c":"Arinco","j":"Architect | Consultant"}],"desc":"APIs are not just endpoints. They communicate intent, capability, and boundaries. When designed well, they are self descriptive, predictable, secure, and resilient under change. In this talk, I will cover the non negotiables of production grade APIs, from contract first design and clean resource modeling to versioning, error semantics, observability, and governance that enables scale without chaos.\n\nWhen structure is precise and constraints are explicit, your API does more than function. It becomes clear to both humans and machines. Clarity in inputs, consistency in behavior, and discipline in change management allow your API to speak for itself. Stop explaining your API. Design it so it can talk."},{"id":4195,"day":"2026-10-28","start":"12:10","end":"13:00","room":"Room 104","title":"From Adoption nightmares to Trusted Outcomes: How Federated AI Gateway Turns Agentic AI into Trusted Digital Workforce","type":"workshop","event":["Apidays"],"track":["Workshops"],"speakers":[{"n":"Peter Jessup","c":"IBM ANZ","j":"Integration and API specialist"},{"n":"Kok Sing\tKhong","c":"IBM ANZ","j":"Integration Architect"}],"desc":"Most organizations have spent years building APIs, integration layers, and governance frameworks. Yet many AI initiatives struggle to move beyond experimentation. Why? Because clean data alone does not create trustworthy, scalable AI.\n\nIn this hands-on workshop, explore how existing API and integration investments can become the operational foundation for deterministic AI agents. Learn how governance, security, policy enforcement, and real-time access to enterprise systems enable AI agents to act with confidence, consistency, and control.\n\nSee how IBM Interact Gateway helps organizations securely connect AI agents to enterprise applications, APIs, and business workflows, transforming years of integration investment into a trusted platform for scalable enterprise AI.\n\nWhat you'll learn\nWhy clean data is necessary but not sufficient for Enterprise AI\nHow APIs become the foundation for deterministic AI agents\nThe role of governance, security, and policy enforcement in agentic systems\nHow to operationalize existing integration investments for AI initiatives\nA demonstration of IBM Interact Gateway in action"},{"id":4158,"day":"2026-10-28","start":"12:10","end":"13:00","room":"Room 101 + 102","title":"API Security Hands On Attack Lab","type":"workshop","event":["Apidays"],"track":["Workshops"],"speakers":[{"n":"Peter Chai","c":"Akamai Technologies","j":"Principal Solutions Engineer - API Security"}],"desc":"Designed for tech pros and managers, this hands-on API Security Workshop explores real-world exploitation techniques, unintended data exposure risks, and strategies to defend your environment."},{"id":4263,"day":"2026-10-28","start":"12:30","end":"12:55","room":"Room 106","title":"Trusting Agents With Your Secrets: What OpenBao Taught Us About Agentic Identity","type":"talk","event":["Cloud Native Summit"],"track":[],"speakers":[{"n":"Rob Kenefeck","c":"Control Plane","j":""}],"desc":"Agentic systems need credentials. They need to authenticate to APIs, access databases, call external services, and do it autonomously, repeatedly, and at speed. The secrets management tooling most organisations rely on was designed for humans and static workloads. It was not designed for non-human identities that spin up, act, and disappear faster than any rotation policy was built to handle.\n\nAt ControlPlane, we started experimenting with OpenBao as a foundation for agentic identity management. Not because it was the obvious answer, but because we suspected the secrets management layer was the right place to solve this problem and wanted to find out if we were right.\n\nThis session shares what we found. Where the architecture held up, where it surprised us, where it fell short, and what we would do differently. We examine how OpenBao's dynamic secrets, policy engine, and audit capabilities map to the specific demands of autonomous agents, and where the gaps still are.\n\nThe honest version of this talk is not a blueprint. It is a practitioner's account of early experimental work in a space where most teams are either ignoring the problem or bolting on identity as an afterthought.\n\nIf you are building agentic systems and wondering how to handle credentials properly, this is the session that starts that conversation with real findings rather than vendor promises."},{"id":4219,"day":"2026-10-28","start":"12:30","end":"13:00","room":"Room 112","title":"C-Suite synthesis","type":"talk","event":["The Executive AI Security Forum"],"track":["The Executive AI Security Forum"],"speakers":[{"n":"Chuck Herrin","c":"Herrin Advisory","j":"Founder and Principal Consultant"}],"desc":""},{"id":4185,"day":"2026-10-28","start":"12:35","end":"13:00","room":"Room 105","title":"Turning Distributed Robotics into Composable APIs","type":"talk","event":["Apidays"],"track":[],"speakers":[{"n":"Frank Fan","c":"Amazon Web Services","j":"Solution Architect"},{"n":"Andy Gelme","c":"Silverpond","j":"A.I Platform Architect"}],"desc":"Robots are leaving the industrial environment. For decades they operated in managed industrial cells—fenced off, predictable, isolated from people. That era is ending: robots and autonomous agents are moving into warehouses, hospitals, homes, and public spaces where they work alongside humans. This shift raises the bar on two fronts at once—these systems must be genuinely useful, and they must be safe. Meeting both, in software that is distributed, concurrent, and runs across wildly different hardware, is one of the hardest problems in the field.\n\nModern robotics is really a fusion of fields—machine learning, media streaming, IoT, and robotics itself—each with its own tools, conventions, and hard edges. Yet under the surface they all want the same things: to compose components, pass messages, stay secure, deploy, and be observed in operation. Aiko Services provides that common ground—one coherent framework beneath the many domains, so you stop reconciling incompatible stacks and start building.\n\nIn this session, we demo a real-world use case: wrapping a physical device as an Aiko Actor and driving it safely over the network. You'll learn how to design portable, testable service APIs and leave with reusable assets—a hardware interface, a mock harness, and pipeline patterns—that give you a practical foothold on building safe, reliable, human-facing robotics."},{"id":4382,"day":"2026-10-28","start":"12:35","end":"13:00","room":"Room 103","title":"Best Experience Is Best Marketing: GTM for an Agent-First World.","type":"talk","event":["Apidays"],"track":["Enterprise API & AI Deployments"],"speakers":[{"n":"Pratham Kumar","c":"APILayer","j":"Developer Relations Manager"}],"desc":"For a decade, developer marketing ran on one core belief: get the API in front of a real engineer, let the docs and playground do the selling, and word of mouth handles the rest as developers hate to market. Every bottom-up GTM motion in this industry, self-serve pricing, generous free tiers, \"just try it\" onboarding, was built to win over a human who reads, tests, and champions.\n\nThat human is disappearing from the first stage of the funnel. Agents are now doing the initial evaluation: reading your docs, hitting your endpoints, comparing you against three competitors in the time it takes a person to open a pricing page. By the time a human sees your product, an agent has already formed an opinion and quietly ranked you against alternatives.\n\nYou don't sell to an agent the way you sell to a person. You don't need a pitch, a nurture sequence, or a demo call. Best experience is best marketing. If your API is the easiest for an agent to understand, integrate, and succeed with on the first try, it becomes the one that gets suggested, recommended, and chosen by default, no persuasion required.\n\nI have spent the last 6 years inside an API portfolio company watching this play out in real evaluation and pricing decisions, not as a hypothesis but as something showing up in how products actually get discovered and compared now.\n\nIn this talk I'll walk through what's already breaking in the classic developer GTM playbook, what \"documentation as marketing\" means when the reader is an LLM instead of a person, and where pricing and positioning strategy needs to change when your buyer's first impression is formed by a machine reading your API, not a human reading your landing page. Other than that, I'll also show my four dimensional framework that provides best experience to agents, and best experience means best GTM strategy in case of an agent especifically."},{"id":4058,"day":"2026-10-28","start":"13:00","end":"14:00","room":"","title":"Lunch Break / Networking / Expo","type":"break","event":["Apidays","Cloud Native Summit","The Executive AI Security Forum"],"track":[],"speakers":[],"desc":""},{"id":4191,"day":"2026-10-28","start":"14:00","end":"14:25","room":"Room 105","title":"The Agentic Shift: Rethinking API Management and Governance for the Agentic Era","type":"talk","event":["Apidays"],"track":["APIs for AI"],"speakers":[{"n":"David Carless","c":"Kong","j":"Vice President, Asia Pacific, India & Japan"}],"desc":"Legacy API and integration architectures are blocking enterprise AI agents from reaching production. This session breaks down why agentic AI demands event-driven, context-first connectivity–and how to build the infrastructure to support it. Learn practical patterns for hybrid MCP and API access, and walk away with a clear roadmap for moving AI initiatives from pilot to production to scale."},{"id":4201,"day":"2026-10-28","start":"14:00","end":"14:25","room":"Room 103","title":"Govern APIs to Accelerate AI ROI","type":"talk","event":["Apidays"],"track":["Architecture for Strategy"],"speakers":[{"n":"Markus Müller","c":"Boomi","j":"Global CTO - API Management"}],"desc":"As AI moves from experimentation to production, APIs have become the critical infrastructure agents depend on to access real-time data, interact with enterprise systems, and retrieve context. Without API governance, agents can introduce data leakage, policy violations, and operational instability, instead of driving business value.\n\nAt AI scale, managing APIs across distributed gateways without a centralized view makes it nearly impossible to catalog, control, and standardize what's been built. While Model Context Protocol simplifies how agents discover and invoke tools, it doesn’t secure the assets underneath, accelerating risk as quickly as it accelerates adoption.\n\nJoin Markus Müller, Global Field CTO, API Management at Boomi, to learn how an enterprise-grade platform enables teams to govern, monitor, productize, and safely expose their APIs as MCP-enabled, agentic tools.\n\nKey takeaways for Enterprise AI and API leaders:\n\nUncover the hidden costs of bypassing governance\nEnforce zero-trust principles and standardize API definitions to safely scale AI initiatives\nAlign speed with control to deliver measurable, sustainable ROI\n\nTransform every API into a trusted tool your agents can act on."},{"id":4264,"day":"2026-10-28","start":"14:00","end":"14:25","room":"Room 106","title":"The Best Agent No One Uses - Why enterprise AI adoption fails upstream of your code","type":"talk","event":["Cloud Native Summit"],"track":[],"speakers":[{"n":"Emma Tordsson","c":"Workday","j":"Principal Enterprise Architect | AI Strategy | Cloud-Native SaaS | Ethical AI Adoption"}],"desc":"You've just shipped a beautifully architected AI Agent. You've scoped the tools, got clean evals, solid traces... yet adoption flatlines. The issue is rarely in your code; it's in the disconnect in how enterprises govern AI, or the complete lack of it. We typically see three layers of AI governance, all required to be connected and cohesive but rarely are: the agent's runtime authority, the build supply chain (your assistants, models, and agentic tooling), and the accountability surface the user actually sees. In this talk we will look at all three layers, show where they fail to connect, and give concrete actions that can be implemented to make sure what you build is adoptable, not just shipped."},{"id":4064,"day":"2026-10-28","start":"14:00","end":"14:25","room":"Room 104","title":"Enterprise Agent Harness: MCP, Tokenomics, and Gateway Control","type":"talk","event":["Apidays"],"track":["The Agentic Enterprise"],"speakers":[{"n":"Madhan Sadasivam","c":"Google","j":"Solutions Architect"}],"desc":"Scale agent harnesses to production. Use AI Gateways to tame token costs, govern MCP tool discovery, and enforce authorization, turning unpredictable LLMs into secure, cost-managed enterprise assets."},{"id":4063,"day":"2026-10-28","start":"14:00","end":"14:25","room":"Room 101 + 102","title":"The Micro-SaaS Playbook: Turning Public APIs into Revenue Opportunities","type":"talk","event":["Apidays"],"track":["Digital strategy"],"speakers":[{"n":"Richard Owens","c":"Vanillah","j":"Director"}],"desc":"Every major SaaS platform has gaps — features their users need but that never make the roadmap. For builders who know where to look, these gaps are revenue opportunities hiding in plain sight.\nIn this lightning talk, I'll share the playbook I've developed for identifying underserved needs in SaaS ecosystems, building lightweight integrations using public APIs, and distributing them through platform marketplaces — where your target customers are already searching for solutions.\nBut here's what most people miss: the product revenue is often just the beginning. For service providers, marketplace integrations act as a trojan horse — they establish your authority in the ecosystem and open the door to services engagements worth multiples of the subscription fees. In my case, a single integration led to over $600,000 in services revenue from one client — before I'd spent a dollar on marketing.\nDrawing from my experience building business verification integrations across HubSpot and Xero — connecting Australian and New Zealand government registries to commercial platforms — I'll walk through a repeatable framework any developer or small team can apply to turn API documentation into revenue."},{"id":4265,"day":"2026-10-28","start":"14:30","end":"14:55","room":"Room 106","title":"\"On Behalf of Whom?\" How to Safely Propagate Identity in Multi-Agent Workflows","type":"talk","event":["Cloud Native Summit"],"track":[],"speakers":[{"n":"Jeff\tIshar","c":"Auth0","j":"Solutions Architect"}],"desc":"Say you're asking a chatbot AI to address a billing issue with your account. That AI does its thing by starting three other microservices in the background to retrieve your information, query your records and update the system for you. But as the frameworks behind these Agent-to-Agent (A2A) workflows are gaining adoption (via open-source protocols like the A2A protocol), it raises one of the biggest security questions imaginable: how can your backend systems trust which user approved an AI agent to perform that work?\n\nIn the process of one agent kicking off another agent, all context about the human user gets deleted in the first jump — it gets translated into a \"\"machine key\"\" by the first AI agent.\n\nThe result is the nightmare scenarios of systems being exposed to accidental information leaks or unauthorized use. This talk cuts through code to describe a common, working example of how we can safely pass a \"\"security baton\"\" from a person to an agent and back, even to another agent."},{"id":4197,"day":"2026-10-28","start":"14:30","end":"14:55","room":"Room 105","title":"Why securing models without securing APIs creates a false sense of control","type":"talk","event":["Apidays"],"track":["APIs for AI"],"speakers":[{"n":"Dominic Lovell","c":"Akamai","j":"Head of Solutions Engineering, ANZ"}],"desc":"In this session we challenge traditional AI security thinking and explore why API security is the true control plane behind AI. Learn how AI amplifies API gaps and how leaders can mitigate risk."},{"id":4065,"day":"2026-10-28","start":"14:30","end":"14:55","room":"Room 104","title":"Prompt to Production: Securing APIs in AI-Driven Systems","type":"talk","event":["Apidays"],"track":["The Agentic Enterprise"],"speakers":[{"n":"Peter Adeosun","c":"Wesfarmers","j":"Security Engineer and Platform"}],"desc":"As organisations rapidly adopt AI-driven systems, the journey from prompt experimentation to production-grade deployment introduces a new class of security, compliance, and architectural challenges. This session explores how to design and secure APIs that power modern AI use cases, especially those built on agent-based architectures, whether single-agent or multi-agent systems.\n\nUsing a real-world lens, we will break down the critical data and compliance requirements that underpin AI workloads, including sensitive data handling, audibility, and regulatory alignment. We will examine how these requirements influence architectural decisions such as agent orchestration, tool exposure, and trust boundaries.\n\nThe talk introduces a practical framework for securing AI-enabled APIs across key domains:\n\nIdentity & Access Management – Establishing strong identity models for both human users and autonomous agents, including authentication, authorisation, and fine-grained policy enforcement.\nAPI Gateway Strategy – Designing secure API gateways to expose AI tools and resources, enforce rate limiting, validate inputs/outputs, and provide centralised governance.\nHuman-in-the-Loop Controls – Integrating approval workflows and oversight mechanisms to mitigate risk in high-impact or sensitive operations.\nSecure Tool Exposure & MCP Security – Safely exposing internal systems and external integrations to AI agents using standards like MCP, enabling controlled, least-privilege access and ensuring secure, auditable interactions between models, tools, and data sources."},{"id":4198,"day":"2026-10-28","start":"14:30","end":"14:55","room":"Room 101 + 102","title":"Komatu's vision: The Enterprise AI Factory that Builds at scale Build, Deploy, Govern, Secure - Agents, Models, Tools","type":"talk","event":["Apidays"],"track":["Digital strategy"],"speakers":[{"n":"Shikha Agarwal","c":"IBM ANZ","j":"Integration Techsales Director"},{"n":"Matthew Baker","c":"Komatsu","j":"Head of Enterprise Applications & Automation"}],"desc":"AI is rapidly evolving from standalone assistants to ecosystems of agents, models, tools, and intelligent services. As enterprises embrace this new era, a critical question emerges: how do we govern, secure, and scale AI across the organization?\nThis session explores the rise of the Agent LifeCycle Governance as the foundation of a sustainable AI strategy. From AI service discovery and cataloguing to agent identity, trust, and policy enforcement, the Agent LifeCycle Governance provides the visibility and governance needed to manage an increasingly autonomous digital workforce.\nJoin us as we examine the next evolution of enterprise architecture and why successful AI adoption will depend not just on building intelligent agents, but on establishing a Lifecycle Governance framework that actually works."},{"id":4291,"day":"2026-10-28","start":"14:30","end":"14:55","room":"Room 103","title":"Frontier quality from a $0.50/MTok model: a context maturity framework for APIs","type":"talk","event":["Apidays"],"track":["Architecture for Strategy"],"speakers":[{"n":"Adeel Ali","c":"APIMatic.io","j":"Co-Founder & CEO"}],"desc":"AI coding agents are now among the fastest growing consumers of APIs, and they are remarkably good at producing integrations that compile, run and pass their tests. That is not the same as an integration you would trust with use cases like payments. In one recent migration of a payment API, a coding agent delivered clean code whose retry logic could charge a customer 4 times, and the test that checked it passed as well.\n\nThis talk looks at why that happens and what API providers can do about it. Drawing on 2026 researches from Ant Group and UC Berkeley, and on a 224 run benchmark across 7 models, it argues that many integration failures are information/context problems rather than reasoning problems. When agents received compiled API context, the cheapest model in the benchmark, at $0.50 per million tokens, matched a frontier model costing fifty times as much on the same integration task.\n\nThe session closes with a practical maturity model for making an API ready for agents, from documentation and contracts through production guidance to continuous verification, and with one question every API team should be able to answer: if an agent started integrating your API tomorrow, how much of what it needs to know would it have to discover for itself?"},{"id":4266,"day":"2026-10-28","start":"15:00","end":"15:25","room":"Room 106","title":"Unlearn with AI Evals","type":"talk","event":["Cloud Native Summit"],"track":[],"speakers":[{"n":"Everett Toews","c":"Deloitte","j":"Specialist Director at Deloitte NZ. Helping organisations establish"}],"desc":"Models change under us constantly and every release quietly shifts the line between what still works and what needs to be unlearned. The prompt scaffolding and workarounds you perfected for the last model are still in your fingers, your memory files, and your agent's system prompt. When the model changes, some of those won't work as well anymore, but nothing tells you which ones. AI evaluations (evals) can help draw that line.\n\nWe start with what it means to unlearn in the context of the AI era. Then we increase our understanding with an introduction to evals (ground truth, metrics, LLM-as-judge, etc). Followed by a walk-through of a real setup that tests new models against the prompts that matter to you. You'll leave knowing how to measure what changed, unlearn what no longer holds, and pick up what's improved."},{"id":4169,"day":"2026-10-28","start":"15:00","end":"15:25","room":"Room 104","title":"APIs in the Age of Agentic AI: Data Privacy With Rapid Innovation","type":"talk","event":["Apidays"],"track":["The Agentic Enterprise"],"speakers":[{"n":"Muhammad Abid Hasan","c":"Catholic Education Sandhurst Limited","j":"Solution Design Lead – Enterprise Platforms and Integration"}],"desc":"Autonomous AI agents are only as powerful as the data they can query, yet letting them loose on standard enterprise APIs creates a massive, high-stakes data privacy minefield. As organizations rush to deploy agentic automation, developers are caught in a brutal tug-of-war: business teams demand rapid innovation at breakneck speed, while compliance teams demand ironclad guardrails. Standard API security protocols simply weren't built to handle the unpredictable, dynamic pathways of autonomous LLMs. If you are still relying on static API keys and rigid perimeter security to protect your sensitive consumer data, your ecosystem is already exposed.\n\nDrawing directly from real-world enterprise digital transformations and complex multi-stream privacy implementations, this session cuts through the AI hype to address the technical reality of the field. We will explore how to stop treating data privacy as a late-stage roadblock and instead embed it directly into your core architectural design.\n\nAttendees will dive deep into a practical engineering playbook for building a dynamic, privacy-aware API gateway capable of enforcing real-time consent, risk mitigation, and strict data governance. They will leave this session not with a vague conceptual overview, but with a battle-tested blueprint to architect fast, secure, and compliant API ecosystems that can safely survive the AI era."},{"id":4292,"day":"2026-10-28","start":"15:00","end":"15:25","room":"Room 101 + 102","title":"APIs, AI and the Future of Digital Logistics","type":"talk","event":["Apidays"],"track":["Digital strategy"],"speakers":[{"n":"Saurav Rawal","c":"Truckit.net","j":"Head of Engineering"}],"desc":"Every day, trucks travel thousands of kilometres with unused capacity—or completely empty—while shippers are simultaneously searching for the right carrier to move their freight. This inefficiency creates unnecessary cost, operational complexity and environmental impact.\n\nAt Truckit.net, we are exploring how technology can help solve this matching problem more intelligently.\n\nIn this session, I’ll share our journey of building and evolving a digital freight marketplace, with a particular focus on how we think about matching freight with the right transport providers. We’ll explore how factors such as location, route, timing, vehicle capability, capacity and historical data can be brought together to identify better matching opportunities and help reduce empty truck movements.\n\nI’ll also discuss the role APIs play in connecting the different systems and data needed to make these decisions, and how AI and machine learning can take matching beyond simple rules toward more intelligent recommendations and predictions.\n\nRather than a deep dive into API specifications or algorithms, this is a practical look at how engineering, data, APIs and AI can work together to tackle a very physical, real-world problem: getting the right freight onto the right truck at the right time."},{"id":4288,"day":"2026-10-28","start":"15:00","end":"15:25","room":"Room 105","title":"The New Edge: Observability, Control and Trust at Runtime with AI","type":"talk","event":["Apidays"],"track":["APIs for AI"],"speakers":[{"n":"Michael Tran","c":"Datadog","j":"Enterprise Solutions Engineer"}],"desc":"As AI agents become autonomous and embedded across enterprise workflows, traditional security perimeters are no longer enough. This session explores how the security edge has shifted from static boundaries and cloud posture to agent runtime behavior. You will discover why securing AI agents requires an observability-first approach, how to detect compromised agent actions across prompts, skills, and MCPs, and the five core capabilities needed to establish real-time visibility, adaptive policies, and runtime protection in the new era of agentic scale."},{"id":4155,"day":"2026-10-28","start":"15:00","end":"15:25","room":"Room 103","title":"When APIs Become the Hands and Legs of AI: Securing Agentic Tool Calling with OAuth Token Exchange and Fine-Grained Authorisation","type":"talk","event":["Apidays"],"track":["Architecture for Strategy"],"speakers":[{"n":"Hemanth Thirtha Prasad","c":"Auth0","j":"Associate Solutions Engineer"}],"desc":"AI agents break API security models built for humans or scripts. Learn how to replace static keys with dynamic tokens, secure multi-tenant data, and keep humans in the loop for high-stakes actions."},{"id":4267,"day":"2026-10-28","start":"15:30","end":"15:45","room":"Room 106","title":"Mandatory or Optional: What the Data Says About Platform Adoption","type":"talk","event":["Cloud Native Summit"],"track":[],"speakers":[{"n":"Charlotte \tFleming","c":"Octopus Deploy","j":"Researcher | PhD in Neuroscience"}],"desc":"Platform Engineering has matured rapidly from a frontier practice to a mainstream industry-standard. Drawing on Octopus Deploy's Future of Platform Engineering research, this talk presents what the data shows about platform adoption across organizations, and what separates the platforms delivering real value from those that don't.\n\nThe findings challenge some common assumptions. Mandated adoption consistently outperforms optional. And what platform builders believe they've delivered rarely matches what developers report experiencing, a pattern that shows up repeatedly in underperforming platforms.\n\nThe data also surfaces where platforms stall. Build-versus-buy decisions, unclear success metrics, and unanticipated obstacles are recurring themes among platforms that lose momentum after launch. What gets measured, and how teams decide what to build next, turns out to matter as much as the initial architecture.\n\nThis talk examines the adoption, decision-making, and organizational dynamics that tend to receive less attention than the engineering, and what the data suggests about where effort is most often misplaced."},{"id":4180,"day":"2026-10-28","start":"15:30","end":"15:55","room":"Room 105","title":"From Black Box to Governed Agent","type":"talk","event":["Apidays"],"track":["APIs for AI"],"speakers":[{"n":"Jon Scheele","c":"Blue Connector","j":"Founder & Principal Consultant"}],"desc":"AI coding assistants are now standard on engineering teams across regulated industries, but rollout speed is outpacing governance. This session presents a practical framework — built around three questions: what can the tool touch, what triggers mandatory human review, and how do you give it enough context to generate aligned code in the first place. Drawing on NIST's AI Risk Management Framework and Singapore's MAS AI governance model, the talk moves beyond \"\"black box\"\" anxiety toward a concrete, auditable approach to human-centric AI software governance.\n\nKey takeaways:\n• A three-question framework for governing AI-generated code at the team level\n• How NIST AI RMF and MAS's approach translate into day-to-day engineering practice\n• A practical line between routine AI-assisted changes and those requiring human sign-off"},{"id":4214,"day":"2026-10-28","start":"15:30","end":"15:55","room":"Room 103","title":"Scaling Agentic AI Across the Enterprise: Evolving Ecosystems to Drive Innovation, Governance and Cost Efficiency","type":"talk","event":["Apidays"],"track":["Architecture for Strategy"],"speakers":[{"n":"Alejandra Leon","c":"BHP","j":"Manager AI Delivery and Development"}],"desc":"In this session, Alejandra Leon explores how organizations can move from experimentation to repeatable, governed, and measurable enterprise AI capability. The focus starts with the business problem and ROI, not the technology and follows the journey through multidisciplinary delivery, reusable architecture patterns, governance and security by design, and operationalization through Agentic AIOps and CI/CD.\n\nThe session also challenges organizations to look beyond token pricing and instead optimize for cost per successful business outcome, balancing quality, risk, performance, and cost.\n\nAttendees will leave with practical principles for evolving from isolated Agentic AI experiments to an enterprise ecosystem that can innovate faster, operate responsibly, and scale with confidence."},{"id":4067,"day":"2026-10-28","start":"15:30","end":"15:55","room":"Room 104","title":"Beyond the Pilot: Leading the Autonomous Enterprise in the Agentic Era","type":"keynote","event":["Apidays"],"track":["The Agentic Enterprise"],"speakers":[{"n":"Su Jella","c":"Torrens University","j":"Lecturer and Subject Architect"}],"desc":"In 2026, the question for leaders has shifted from \"\"How do we use AI?\"\" to \"\"How do we lead an organisation that is agent-orchestrated?\"\" As we move away from human-led digital workflows toward autonomous API stacks, leadership requires a fundamental pivot: moving from managing tasks to governing outcomes.\n\nIn this topic, I will explore the rise of the Sovereign Autonomous Enterprise. I will dissect why \"\"Black Box Dependency\"\" is the greatest strategic risk of 2026 and how leaders can build resilient, independent AI ecosystems that respect regional data residency without sacrificing innovation. You’ll learn how to bridge the gap between C-suite strategy and API architecture, ensuring your \"\"digital workers\"\" are aligned with human values, operational continuity, and the bottom line.\n\nKey Takeaways:\n\nArchitecting Autonomy: Moving from \"\"Copilots\"\" to independent Agentic workflows via robust API orchestration.\n\nThe Sovereignty Mandate: Strategies for maintaining operational control when your enterprise \"\"brains\"\" live in the cloud.\n\nHuman-Centric ROI: How to reskill teams to manage AI agents rather than just using them as tools.\n\nJoin me to redefine the boundary between human intuition and machine execution."},{"id":4385,"day":"2026-10-28","start":"15:30","end":"15:55","room":"Room 101 + 102","title":"Beyond API Integration: Connecting AI to Business Outcomes","type":"talk","event":["Apidays"],"track":["Digital strategy"],"speakers":[{"n":"Satya Chunduru","c":"Enterprise Technology Executive","j":"Creator of the 3A™ Framework | Align • Augment • Achieve"}],"desc":"Beyond API Integration: Connecting AI to Business Outcomes\n\nAs organisations accelerate AI adoption, APIs are becoming increasingly important in connecting enterprise systems, data, knowledge, AI agents and business services. However, technical integration alone does not guarantee business value.\n\nMany organisations successfully connect systems and develop AI solutions but struggle to translate these capabilities into scalable, measurable business outcomes. The challenge extends beyond technology to aligning enterprise capabilities, trusted knowledge, business decisions, governance and AI-enabled actions.\n\nThis session introduces the 3A™ Framework (Align • Augment • Achieve), a technology-agnostic enterprise architecture approach designed to bridge the gap between AI ambition and business outcomes.\n\nUsing a practical enterprise scenario, we will explore how APIs enable AI agents to access trusted enterprise knowledge, interact with business services, support informed decisions and execute governed actions.\n\nThe session will also demonstrate how enterprise architecture provides the broader context for identifying capability gaps, connecting existing investments and aligning API-enabled AI initiatives with business priorities.\n\nKey takeaways include:\n\nUnderstanding the evolving role of APIs in enterprise AI adoption.\nConnecting enterprise knowledge, decision intelligence, AI agents and business services.\nApplying architecture and governance principles to enable scalable, accountable AI adoption.\nMoving beyond technical connectivity towards measurable business outcomes.\n\nThe central message: APIs enable connectivity. Enterprise architecture helps turn that connectivity into business value."},{"id":4268,"day":"2026-10-28","start":"15:45","end":"16:00","room":"Room 106","title":"TBA","type":"talk","event":["Cloud Native Summit"],"track":[],"speakers":[],"desc":""},{"id":4059,"day":"2026-10-28","start":"16:00","end":"16:20","room":"","title":"Coffee Break / Networking / Expo","type":"break","event":["Apidays","Cloud Native Summit"],"track":[],"speakers":[],"desc":""},{"id":4269,"day":"2026-10-28","start":"16:20","end":"16:45","room":"Room 106","title":"Who ordered all these tokens? Managing your AI costs.","type":"talk","event":["Cloud Native Summit"],"track":[],"speakers":[{"n":"Sonia Cuff","c":"Microsoft","j":"Cloud Advocate"}],"desc":"Tokenmaxxing is out. The brakes are on AI spending unless it's delivering value and we can show business ROI. Learn how the Tokenomics Foundation is tackling this, and how the FinOps Framework provides the cross-functional collaboration and data-driven visibility you need to scale your AI workloads with confidence."},{"id":4072,"day":"2026-10-28","start":"16:20","end":"16:45","room":"Room 104","title":"Beyond Vibe Coding: Is Spec-Driven Development Ready for Enterprise Integration?","type":"talk","event":["Apidays"],"track":["The Agentic Enterprise"],"speakers":[{"n":"Nikolai Blackie","c":"Adaptiv","j":"CTO/Co-Founder of Adaptiv"}],"desc":"AI agents speed up enterprise integration, but incomplete requirements and production complexity expose vibe coding’s limits. Can spec-driven development build trust across Azure, MuleSoft and Boomi?"},{"id":4202,"day":"2026-10-28","start":"16:20","end":"16:45","room":"Room 103","title":"Beyond the Gateway: Agents Have Already Found Your Blind Spots. Have You?","type":"talk","event":["Apidays"],"track":["Architecture for Strategy"],"speakers":[{"n":"Shahnawaz Backer","c":"F5 Labs","j":"Director Solutions Engineering"}],"desc":"Your API gateway only protects the APIs it knows about, and in most organizations that’s a fraction of what’s actually running. Deprecated versions nobody switched off. Internal services exposed during a migration. LLM wrappers and vector database connectors spun up for a quick experiment and never registered. These shadow and zombie APIs live outside the gateway, outside security policy and outside anyone’s view.\n\nAutonomous agents turn this blind spot into an open door. Give an agent tools and a task, and it will use whatever endpoint gets the job done. It reads documentation, follows links in responses, tries older API versions and chains calls across services with a speed and persistence no human can match. Whether it’s hijacked by prompt injection or simply over-eager, an agent will find the undocumented endpoint with missing authorization checks, then exploit broken object-level authorization, excessive data exposure or unrestricted resource consumption, without ever touching the gateway you secured.\n\nThis session shows why inventories built on developer-submitted OpenAPI specs fall short, and how continuous runtime discovery from live traffic and gateway telemetry reveals what’s really exposed. You’ll leave with a practical playbook to:\n\n• Discover every live endpoint, including shadow, zombie and AI-specific APIs, across multi-cloud and container environments\n\n• Classify APIs by sensitivity and function, from inference to retrieval to tool endpoints, so controls follow the data\n\n• Enforce positive security, drift detection and scoped authorization everywhere, not just at the gateway\n\n• Detect the difference between an agent doing its job and an agent mapping your attack surface\n\nYour agents already know what you’re exposing. It’s time you did too."},{"id":4183,"day":"2026-10-28","start":"16:20","end":"16:45","room":"Room 101 + 102","title":"Preparing Enterprise IT for the Agentic AI Tsunami","type":"talk","event":["Apidays"],"track":["Digital strategy"],"speakers":[{"n":"Claudio Tag","c":"IBM APAC","j":"CTO Automation"}],"desc":"AI Agents are here — and they're exposing (and often exploiting) every crack in your enterprise IT foundation. Fragmented monitoring, inefficient integrations, stale context management, ungoverned identities, and spiralling costs aren't isolated IT problems — they're existential risks. Rolling out agents at enterprise-scale has proven near impossible — but why? Memory limitations, inconsistent tool quality, and neglected fundamentals like identity, governance, and AgentOps are killing pilots before they ever reach production.\nOrganisations need an Enterprise approach to Agentic AI: an evolving reference architecture and a practical maturity model to adopt AI Agents at scale — covering unified observability, continuous exposure management, AI Gateways, Agentic identity, and the true cost of AI at scale. The tsunami isn't coming. It's already hitting shore."},{"id":4181,"day":"2026-10-28","start":"16:20","end":"16:45","room":"Room 105","title":"From OpenAPI to MCP: Making Existing APIs Agent-Ready","type":"talk","event":["Apidays"],"track":["APIs for AI"],"speakers":[{"n":"Cliffano Subagio","c":"Shine Solutions","j":"Principal Engineer"}],"desc":"OpenAPI revolutionized API consumption by enabling documentation, validation, and SDK generation from machine-readable contracts. As AI agents become a new class of API consumers, organizations face a new challenge: exposing existing capabilities to agents without rebuilding integrations.\n\nThis talk explores how OpenAPI specifications can serve as the foundation for generating Model Context Protocol (MCP) servers, creating an agent-facing layer on top of existing web APIs. Through practical demonstrations, we show how API operations, parameters, and schemas can be transformed into structured tools that AI agents can discover and invoke.\n\nBeyond implementation, we examine the architectural implications of supporting autonomous agents as consumers, including discoverability, governance, authentication, observability, and safety boundaries. Rather than replacing existing APIs, MCP enables organisations to extend them using the contracts they already maintain.\n\nAttendees will gain practical approaches for evolving existing API ecosystems into agent-ready platforms while preserving established governance and operational controls.\n\nThis talk supports MCP adoption by demonstrating how existing OpenAPI specifications can be repurposed into agent-accessible interfaces without creating custom integrations or rewriting APIs. By building on established API contracts, organizations can accelerate AI adoption while maintaining consistency and interoperability."},{"id":4126,"day":"2026-10-28","start":"16:50","end":"17:15","room":"Room 103","title":"Applying the OWASP Top 10 for Agentic Applications to Your AI Agents","type":"talk","event":["Apidays"],"track":["Architecture for Strategy"],"speakers":[{"n":"Will Velida","c":"Microsoft","j":"Senior Software Engineer"}],"desc":"The OWASP Top 10 for Agentic Applications (2026) identifies the most critical security risks facing AI agents, from goal hijacking and tool misuse to identity abuse, memory poisoning, and cascading failures. But the guidance stops at \"what,\" not \"how.\" This talk bridges the gap between framework and implementation. Using my personal health agent as an example, I'll walk through every applicable OWASP Agentic risk and show the exact code, infrastructure, and architecture decisions that mitigate each one."},{"id":4073,"day":"2026-10-28","start":"16:50","end":"17:15","room":"Room 104","title":"Is API or MCP the Future? Rethinking Integration in the Age of AI Agents","type":"talk","event":["Apidays"],"track":["The Agentic Enterprise"],"speakers":[{"n":"Krishan Wijesena","c":"WSO2 LLC","j":"Senior Technical Lead"}],"desc":"For over a decade, APIs have been the foundation of digital platforms, enabling reliable, contract-driven integration across systems. With the rise of AI agents and tool-aware models, a new question is emerging: Are APIs still enough, or is Model Context Protocol (MCP) the future of integration?\nThis session examines how MCP introduces a fundamentally different interaction model one optimized for AI systems that discover, reason over, and invoke tools dynamically based on context. We will contrast traditional API-driven architectures with MCP-based approaches, exploring differences in control flow, coupling, governance, and operational visibility.\nRather than positioning MCP as a replacement for APIs, this talk presents a pragmatic view of how the two models address different problem spaces. Through real-world architectural patterns, attendees will learn where APIs remain indispensable, where MCP unlocks new capabilities, and how hybrid platforms can evolve to support both without compromising security, governance, or scalability.\nBy the end of the session, architects and engineers will have a clear perspective on how integration is evolving and what “the future” realistically looks like for API platforms in an AI-driven world."},{"id":4182,"day":"2026-10-28","start":"16:50","end":"17:15","room":"Room 105","title":"You Approved the Intent and Your API Should Approve the Route","type":"talk","event":["Apidays"],"track":["APIs for AI"],"speakers":[{"n":"Sagara Gunathunga","c":"WSO2","j":"Head of DevRel - IAM, WSO2"}],"desc":"A person's AI assistant booked him a gym class by finding an API that never checked authorization. It moved him up the waitlist by cancelling someone else's reservation, further ahead than the rules allowed. That is a real story, and there are others on record. OpenAI, Anthropic, and Meta have all disclosed that their models reached real systems over the internet, including one agent that broke out of an evaluation environment into four accounts across four third-party services. Every one of these was found retrospectively, or by accident.\n\nThe problem is not the AI. The API had no way to know that an agent, rather than the account holder, made the call. Agents today borrow a human identity or a workload identity, and neither fits. A human identity carries accountability an agent cannot inherit. A workload identity assumes a route that was coded and reviewed in advance.\n\nThis talk shows how agents borrow identity today: through tokens that carry no reference to the agent, and through browser sessions they simply inherit. It argues that the API layer already knows how to tell a human apart from a deterministic application following a hardcoded, tested, predetermined route. What it does not yet do is repeat that exercise for an agent, whose route is not fixed in advance but chosen autonomously and adapted request by request. That gap is why an identity of the agent's own is a fundamental necessity."},{"id":4184,"day":"2026-10-28","start":"16:50","end":"17:15","room":"Room 101 + 102","title":"Capability Engineering: A New Discipline for the AI-Native Enterprise","type":"talk","event":["Apidays"],"track":["Digital strategy"],"speakers":[{"n":"Azwaan Ameer","c":"Avanade","j":"Senior Application Architect"}],"desc":"AI is making individual tasks dramatically faster. But faster tasks do not automatically create a more capable organisation.\n\nKnowledge remains fragmented, AI initiatives remain isolated, and valuable discoveries are repeatedly recreated rather than becoming reusable organisational capability.\n\nThrough my work applying AI to real organisational problems, I developed and refined an approach I call Capability Engineering - a structured engineering model for using AI to build and uplift organisational capability. It brings together clear intent, organisational knowledge, reusable AI-enabled abilities and systematic execution, moving beyond ad-hoc AI assistance towards capabilities that can be deliberately engineered, reused and evolved.\n\nThis session introduces the model, how it emerged through practical application, and lessons from validating it across real capability scenarios.\n\nAt its heart is a bigger question:\n\n**What if we could engineer what an organisation becomes capable of doing - not just the systems it builds?"},{"id":4270,"day":"2026-10-28","start":"16:50","end":"17:15","room":"Room 106","title":"AI native platform engineering: building the platform when agents are the primary consumer","type":"talk","event":["Cloud Native Summit"],"track":[],"speakers":[{"n":"Jeffrey Aven","c":"StackQL Studios","j":"Co-founder"}],"desc":"Platform engineering built its playbook for human consumers: portals, golden paths, self-service templates, and review gates. AI agents break most of those assumptions — they do not click through portals, they do not wait for reviews, and they consume capability at machine speed.\n\nThis session looks at what changes when agents become first-class consumers of your internal platform, drawn from production experience building an agent-facing control plane across multiple cloud providers. We cover what agents actually need from a platform: queryable live state rather than dashboards, machine-enforceable policy rather than human review gates, and discoverable capability rather than documentation.\n\nWe look at interface design for agent consumers — why exposing platform capability as a uniform query and provisioning surface beat a catalogue of bespoke tools, and what that did to context size and reliability — and at guardrails as platform features: read-only defaults, query-before-mutation, and policy gates enforced at the interface.\n\nIncludes a live demo of an agent consuming platform capability end to end, from natural language question to policy-gated change, and an honest account of what we got wrong first. All patterns shown are tool-agnostic, demonstrated with open source software."},{"id":4151,"day":"2026-10-28","start":"17:20","end":"17:20","room":"","title":"End of Day 1","type":"break","event":["Apidays","Cloud Native Summit"],"track":[],"speakers":[],"desc":""},{"id":4149,"day":"2026-10-29","start":"09:00","end":"09:30","room":"","title":"Welcome Breakfast","type":"break","event":["Apidays"],"track":[],"speakers":[],"desc":""},{"id":4150,"day":"2026-10-29","start":"09:30","end":"09:40","room":"Room 109 + 110","title":"Opening Remarks","type":"opening_remarks","event":["Apidays"],"track":[],"speakers":[{"n":"Mehdi Medjaoui","c":"Founder and Chairman of Apidays Conferences","j":"Author of Continuous API Management"}],"desc":""},{"id":4079,"day":"2026-10-29","start":"09:40","end":"10:05","room":"Room 109 + 110","title":"If you thought the speed of writing code was your problem, you have bigger problems","type":"keynote","event":["Apidays"],"track":["keynote"],"speakers":[{"n":"Andrew Murphy","c":"Debugging Leadership","j":"CEO"}],"desc":"AI can write code faster than you. Congratulations to the robots. But if speed of code production is the thing holding your team back, I've got some uncomfortable news: you have much bigger problems and nobody is willing to talk about them.\n\nI've spent over 25 years building software and the bottleneck was almost never the typing. It was the three-week argument about what to build. The requirements that changed after you shipped. The stakeholder who couldn't articulate what they actually needed. The architectural decision nobody wanted to own."},{"id":4248,"day":"2026-10-29","start":"09:40","end":"10:10","room":"Room 106","title":"Making Production Legible to Agents: Lessons from Building an Observability MCP","type":"keynote","event":["Cloud Native Summit"],"track":[],"speakers":[{"n":"Liz  Fong-Jones","c":"honeycomb","j":""}],"desc":"An agent that can query production telemetry can test its own hypotheses against reality, rather than hallucinate fictions. Observability tooling allows our agents to close the loop and benefit from production wisdom. Today, more than 40% of Honeycomb's weekly active users run production queries through our MCP server via their agents.\n\nBut an MCP server must do more than wrap existing APIs to be legible to the agents. Getting token economy, tool descriptions, or schemas wrong makes access technically present but practically useless. I'll walk through the output format choices, decisions from evals, and bugs (solved and still being found) that made ours trustworthy in production, enabling users and their agents to see clearly in production."},{"id":4186,"day":"2026-10-29","start":"10:05","end":"10:30","room":"Room 109 + 110","title":"Integration in an AI World: Building for Humans, Systems, and Agents","type":"keynote","event":["Apidays"],"track":["keynote"],"speakers":[{"n":"Dan Toomey","c":"Deloitte","j":"Integration Specialist"}],"desc":"As AI agents become first‑class consumers of APIs, integration is no longer plumbing — it’s the execution layer of intelligent systems. In this session, we explore how AI is reshaping the way integrations are designed, built, and governed, and why traditional approaches break down when code is generated, orchestrated, and debugged by machines.\n\nYou’ll learn what “agent‑ready” APIs really require, how AI accelerates integration while introducing new risks, and how Microsoft’s integration and AI stack can help teams build reliable, observable, and governable workflows in an AI‑generated world.\n\nExpect practical insights, a fast‑paced demo, and a clear roadmap for preparing your APIs and integration landscape for the agentic era."},{"id":4249,"day":"2026-10-29","start":"10:10","end":"10:40","room":"Room 106","title":"AI SDLC At Scale - From Cloud Agent Spaces To Headless Agents Next To Repos","type":"keynote","event":["Cloud Native Summit"],"track":[],"speakers":[{"n":"Rebecca Ye","c":"Deloitte","j":"Senior Engineer"}],"desc":"Agents are moving off your laptop into the cloud and pipelines - containerised, repo-connected and always on. Here's what we build on top of our foundations."},{"id":4060,"day":"2026-10-29","start":"10:30","end":"11:00","room":"","title":"Coffee Break / Networking / Expo","type":"break","event":["Apidays","Cloud Native Summit"],"track":[],"speakers":[],"desc":""},{"id":4135,"day":"2026-10-29","start":"11:00","end":"11:25","room":"Room 103","title":"Building Customer Trust: Turning composable APIs into telco Innovation","type":"talk","event":["Apidays"],"track":["Digital mindset"],"speakers":[{"n":"Felton Xu","c":"Optus","j":"Associated Director - Product Architecture"}],"desc":""},{"id":4075,"day":"2026-10-29","start":"11:00","end":"11:25","room":"Room 101 + 102","title":"Managing cloud infrastructure with CDKTF","type":"talk","event":["Apidays"],"track":[],"speakers":[{"n":"Artem Koshelev","c":"Atlassian","j":"Principal Engineer"}],"desc":"While building platform support for Atlassian Isolated Cloud offering, we needed a tool for infrastructure management. In this talk I want to explore with you, why we ended up using CDKTF, where it's falling short and how we addressed some of the gaps."},{"id":4170,"day":"2026-10-29","start":"11:00","end":"11:25","room":"Room 105","title":"The API-First Payment Orchestrator: Why We Chose a Modular Monolith","type":"talk","event":["Apidays"],"track":["API & AI in Banking and finance"],"speakers":[{"n":"Liam Ford","c":"Commonwealth Bank","j":"Principal Engineer"}],"desc":"Over the past decade, I've worked as a Principal Engineer across three major banks, helping design and evolve large-scale payment platforms and APIs. One lesson I've learned is that while microservices are often seen as the default architecture for modern systems, they're not always the right answer.\n\nIn this talk, I'll share the thinking behind building an API-first payment orchestrator using a modular monolith, drawing on real-world experience delivering systems that need to balance reliability, maintainability, performance, and the ability to evolve over time. Rather than debating monoliths versus microservices, I'll explore the practical engineering decisions that shaped the architecture, the trade-offs we considered, and the lessons we learned along the way.\n\nWe'll cover topics including API-first design, domain-driven design, modular boundaries, team ownership, deployment, testing, and how to scale a modular monolith without sacrificing developer productivity or creating unnecessary operational complexity. I'll also discuss the indicators that suggest it's time to consider microservices, and when it isn't.\n\nThis session is for architects, engineering leaders, and software engineers who want to move beyond architectural trends and make decisions based on context, business needs, and engineering outcomes. Attendees will leave with practical patterns and a decision-making framework they can apply to their own systems."},{"id":4161,"day":"2026-10-29","start":"11:00","end":"11:25","room":"Room 104","title":"Federation for the JVM","type":"talk","event":["GraphQL Day"],"track":[],"speakers":[{"n":"Andreas Marek","c":"Feddi","j":"CTO"}],"desc":"Feddi gateway is the first open source implementation of the community driven GraphQL spec. This talk will introduce feddi gateway."},{"id":4250,"day":"2026-10-29","start":"11:00","end":"11:25","room":"Room 106","title":"Agentic SRE: Moving from Alerting to Autonomous Remediation in Day-2 Operations","type":"talk","event":["Cloud Native Summit"],"track":[],"speakers":[{"n":"Anupam Phoghat","c":"Core-X","j":"Founding Director"}],"desc":"Modern cloud-native infrastructure generates more alerts than human engineers can ever realistically handle. We are stuck in a loop of getting paged, checking Grafana, and executing runbooks. It's time to move past static alerting and build systems that can actually fix themselves.\n\nThis session bridges the gap between traditional infrastructure-as-code and Generative AI for Day-2 operations. I will demonstrate how to build an \"\"Agentic SRE\"\" workflow that doesn't just page you — it investigates. We will walk through a practical, production-ready event-driven architecture that catches Prometheus webhooks, passes the payload to an LLM to query open-source telemetry for context, and finally proposes safe infrastructure-as-code fixes via Terraform and kubectl. This isn't sci-fi; it's just smart orchestration. You will leave with a clear roadmap for implementing AI-driven incident response in your own high-scale Kubernetes environments."},{"id":4076,"day":"2026-10-29","start":"11:30","end":"11:55","room":"Room 103","title":"Why LLMs Fall for Stories (And 5 Production Patterns That Actually Stop Them)","type":"talk","event":["Apidays"],"track":["Digital mindset"],"speakers":[{"n":"Mal\tCurtis","c":"Nvidia","j":"Principal Software Engineer"}],"desc":"AI-native API development is facing a reliability crisis. Hallucinated responses slip through testing, token costs grow uncontrollably, response formats drift between requests, and latency spikes cascade through downstream systems. Most teams treat these as entirely new AI-era problems — but many of them are fundamentally operational and quality-engineering failures that manufacturing solved decades ago.\n\nThis talk explores how the principles behind the Toyota Production System can be directly applied to modern AI-native architectures built on LLMs, agents, and RAG pipelines. Using real-world API failure modes as the starting point, the session maps six lean engineering principles onto the AI API lifecycle: automated quality gates that stop unsafe deployments, continuous improvement loops for prompts and retrieval systems, trace-driven debugging instead of dashboard-driven assumptions, workload leveling for unpredictable AI traffic, elimination of token waste and schema drift, and guardrails that make invalid AI behaviour impossible rather than merely detectable.\n\nRather than focusing on model hype or framework churn, the talk reframes AI reliability as an engineering discipline problem. The session provides a practical mental model for building observable, governable, and accountable AI systems in production. Attendees will leave with concrete implementation patterns, a production-ready checklist, and a lean systems approach for turning AI from a probabilistic black box into an operationally trustworthy platform."},{"id":4136,"day":"2026-10-29","start":"11:30","end":"11:55","room":"Room 105","title":"LLM First vs Code First for Trusted Agentic APIs","type":"talk","event":["Apidays"],"track":["API & AI in Banking and finance"],"speakers":[{"n":"Swapneswar Sundar Ray","c":"US Bank","j":"Assistant Vice President - AI Engineering"}],"desc":""},{"id":4162,"day":"2026-10-29","start":"11:30","end":"11:55","room":"Room 104","title":"Closing the Loop: How GraphQL Gives Coding Agents Eyes on What Actually Matters","type":"talk","event":["GraphQL Day"],"track":[],"speakers":[{"n":"Michael Staib","c":"ChilliCream","j":"Founder"}],"desc":"Coding agents are reshaping how we build software. Implementing features, refactoring systems, and shipping changes at a pace unthinkable 6 months ago. But to be successful with agents you need the right feedback loop. One that guides your agent to success, not into the spiral of death.\n\nAsk Claude to add a review system to your product API. Without knowing what's in use, it might reshape your types, move fields, and break your deployed clients because it is missing a crucial feedback loop of what's in use in your clients.\n\nGraphQL changes this. Every client operation explicitly declares the exact fields and types it needs. That gives you something rare: field-level usage data across your entire consumer base. Not endpoint hits, but actual demand, broken down to the individual field.\n\nWhen coding agents can access this data, they stop guessing. Evolve your schema grounded in reality, not assumptions.\n\nThis talk shows how GraphQL's inherent usage visibility and the rise of coding agents create a feedback loop that didn't exist before. And why it matters for anyone building APIs that need to evolve fast."},{"id":4077,"day":"2026-10-29","start":"11:30","end":"11:55","room":"Room 101 + 102","title":"A Multi-Agent BaaS Architecture for Real-Time Investigation Using Dify","type":"talk","event":["Apidays"],"track":[],"speakers":[{"n":"Ramachandra Prabu Muralimohan","c":"","j":"Engineering Manager"}],"desc":"Most teams building multi-agent AI hit the same fork: hand-roll orchestration with something like LangGraph, or compose it on a Backend-as-a-Service platform and skip building the engine. This talk makes the case for the second path — using Dify to turn a multi-agent investigation workflow into a governed REST API in hours, not weeks. I'll break down what \"composing agents as an API\" actually means: specialist agents running in parallel, each scoped like its own microservice, merged by a synthesizer into one ranked, cited response — then call it live, the way any consumer system would, and watch the real request and response. If you're weighing whether your next agentic system needs a custom orchestration layer or just a well-designed API contract, this is that talk."},{"id":4252,"day":"2026-10-29","start":"11:30","end":"11:55","room":"Room 106","title":"How to keep APIs safe in the age of AI","type":"talk","event":["Cloud Native Summit"],"track":[],"speakers":[{"n":"Danny Tran","c":"NAB","j":"Senior Software Engineer"},{"n":"Liam Byrne","c":"Tetrate","j":"Software Engineer"}],"desc":"AI is speeding up how vulnerabilities are found and exploited, so API owners must move faster too.\n\nDanny (NAB) and Liam (Tetrate) share NAB's journey from Kubernetes NGINX ingress to Istio and Tetrate Service Bridge in a regulated environment. They'll cover mTLS, SPIFFE workload identity, zero-trust enforcement between services, centralised policies across clusters, and how TSB uses AI to rapidly respond to new vulnerabilities.\n\nAttendees will leave knowing how to sequence a migration off ingress-based routing without a big-bang cutover, how workload identity replaces network-location trust and what that changes for API owners, how to apply policies fleet-wide in minutes rather than app by app, and where AI-assisted vulnerability response helps versus where a human still belongs in the loop."},{"id":4384,"day":"2026-10-29","start":"11:30","end":"11:55","room":"Room 105","title":"From v51 to v72: What It Takes for AI Agents to Migrate Financial APIs?","type":"talk","event":["Apidays"],"track":["API & AI in Banking and finance"],"speakers":[{"n":"Adeel Ali","c":"APIMatic.io","j":"Co-Founder & CEO"}],"desc":"Releasing a new API version is relatively easy. Getting thousands of existing integrations to adopt it is a different challenge. For payment platforms, fintechs and financial API providers, this often means maintaining older versions for years, even when better alternatives are available. Australia’s Consumer Data Right offers a familiar example of how complicated API version transitions can become.\n\nAI coding agents could change this equation, but how much can we trust them with migrations that involve real financial transactions?\n\nIn this talk I'll share the migration experience from version 51 to version 72 of a leading payment provider’s Checkout API. I'll share the problems the AI overlooked, even though the code compiled and ran fine. Drawing on this migration, I’ll show how versioned API context changed the agent’s implementation, what it fixed, and where the limitations remain. More importantly, I’ll explore what API providers can do to make their APIs easier for agents to consume safely as versions evolve."},{"id":4253,"day":"2026-10-29","start":"12:00","end":"12:25","room":"Room 106","title":"Give Your AI Agents a Sandbox: Running Untrusted Agent Code Safely on Kubernetes","type":"talk","event":["Cloud Native Summit"],"track":[],"speakers":[{"n":"Aditya Joshi","c":"Walmart","j":"Senior Software Engineer"}],"desc":"AI agents are getting alarmingly good at writing code - and then running it. But where does that code actually execute? Far too often it's eval() in your app process or a shared container with a mounted service account token. That's a security incident waiting for a stack trace.\n\nThis talk introduces Agent Sandbox, a Kubernetes SIG project that turns the cluster into a purpose-built execution layer for untrusted agent code. We'll cover the new CRDs - SandboxTemplate, SandboxWarmPool, and the sandbox router - and show how gVisor isolation, dropped capabilities, and disabled token automounting give you defense in depth. Then we'll go live: spinning up a hardened Python sandbox from a warm pool in under a second, running agent-generated code, and tearing it down. Come for the demo, leave with a threat model."},{"id":4166,"day":"2026-10-29","start":"12:00","end":"12:25","room":"Room 104","title":"Beyond the Experience Graph: The Data Graph Meets AI","type":"talk","event":["GraphQL Day"],"track":[],"speakers":[{"n":"Eddy Nguyen","c":"Seek","j":"Lead Engineer"}],"desc":"Most of us know GraphQL as the \"\"Experience Graph\"\", shaped around screens and clients. But GraphQL can be used elsewhere in your architecture: as a Data Graph, a strongly-typed abstraction directly over your data layer, giving every consumer - services and AI agents alike - a single place to access all your data.\n\nIn this talk, I'll show how modelling your databases behind a GraphQL schema gives you a self-describing, introspectable contract and why that turns out to be a remarkably good surface for AI. Through demos, we'll see AI agents introspect a Data Graph to explore data, assist developers in writing and refining queries, and even propose schema improvements by spotting gaps and ambiguities humans miss.\n\nYou'll leave with a clear mental model of when a Data Graph makes sense, how it differs from the experience graph you already know, and practical patterns for making your graphs AI-ready."},{"id":4294,"day":"2026-10-29","start":"12:00","end":"12:25","room":"Room 103","title":"Cyber Smart, AI Ready: Building Trust in a Digital World","type":"talk","event":["Apidays"],"track":["Digital mindset"],"speakers":[{"n":"Varsha Manek","c":"Kindify pty ltd","j":"Founder- Kindify"}],"desc":"Generative AI is changing how we work, learn and deliver services—but adopting it responsibly requires more than a policy. It requires people who understand the risks and know how to make informed decisions every day.\n\n“Cyber Smart, AI Ready” explores the human side of sovereign intelligence: how organisations can."},{"id":4293,"day":"2026-10-29","start":"12:00","end":"12:25","room":"Room 105","title":"The API Call Was Valid. The AI Agent's Action Wasn't.","type":"talk","event":["Apidays"],"track":["API & AI in Banking and finance"],"speakers":[{"n":"Haibin Li","c":"Haibin CanFixIT","j":"Senior Software Engineer"}],"desc":"AI agents are evolving from assistants that recommend actions into autonomous systems that call APIs, exchange data, and initiate payments. But a valid API credential doesn't necessarily prove that an agent's specific action was authorised by the human it represents.\n\nImagine an AI agent approved to summarise a dataset. What happens when it attempts to export that same dataset using identical credentials and payment details? How can the API distinguish an authorised action from an unauthorised one?\n\nThis talk explores a practical approach to \"verifiable, human-delegated authorization for autonomous AI agents\".\n\nDrawing on my work developing Virtual Haibin, an experimental AI-agent authorization and payment system, I'll demonstrate how cryptographically signed permissions can bind human approval to specific operations and resources. A live demonstration will show two otherwise identical API transactions producing different outcomes: one allowed, the other rejected.\n\nWe'll examine how this approach complements existing OAuth and API security models, along with practical challenges including replay protection, revocation, independent verification, and auditability.\n\nAs AI agents increasingly interact with services and other agents, API security must evolve beyond verifying \"who is calling\" to establishing \"what they are actually authorised to do\"."},{"id":4375,"day":"2026-10-29","start":"12:00","end":"12:55","room":"Room 101 + 102","title":"Production Ready Agents: Orchestration Lab","type":"workshop","event":["Apidays"],"track":["Workshops"],"speakers":[{"n":"Viren Baraiya","c":"Orkes","j":"Co-Founder & CTO"}],"desc":"Learn how to build and run production-grade AI agents on Orkes Conductor. Combine durable, deterministic workflows with LLM agents for reasoning and synthesis."},{"id":4262,"day":"2026-10-29","start":"12:30","end":"12:55","room":"Room 106","title":"Achieving Sovereign AI with an Open Source Stack","type":"talk","event":["Cloud Native Summit"],"track":[],"speakers":[{"n":"Kanchana Wickremasinghe","c":"WSO2","j":"Vice President & General Manager API & Integration"}],"desc":"As AI adoption accelerates, a new question has moved from policy think-tanks to enterprise boardrooms: who controls your AI?\n\nSovereign AI — the ability to design, deploy, and govern artificial intelligence while maintaining full control over data, infrastructure, models, and governance frameworks — has become a top priority for governments and enterprises alike. The European Commission's June 2026 Tech Sovereignty Package, the EU AI Act's compliance deadlines, and similar regulatory frameworks across APAC, the Middle East, and Africa are forcing organisations to confront an uncomfortable reality: most AI infrastructure today is fundamentally not sovereign.\n\nWhen your AI agents process sensitive data through a hyperscaler's proprietary platform, governed by another nation's laws (hello, US CLOUD Act), you don't truly control your AI. You're renting it."},{"id":4187,"day":"2026-10-29","start":"12:30","end":"12:55","room":"Room 103","title":"Moving Beyond the Spec: Humanising APIs","type":"talk","event":["Apidays"],"track":["Semantic Layer"],"speakers":[{"n":"Eeshaan Sawant","c":"Independant","j":""}],"desc":"We talk a lot about API specs, but not nearly enough about API experience. Sure, OpenAPI is great at defining how APIs work—but does it tell us how to make them feel more human?\n\nIn this talk, we’ll go beyond the spec and straight into the developer experience. I’ll show you how to create API references and docs that feel clear, inclusive, and welcoming from the very first read. We’ll see how to \"\"bake\"\" empathy into your workflow, and why localisation isn’t just a “nice to have”.\n\nIf you care about building APIs people actually want to use, this talk is for you."},{"id":4224,"day":"2026-10-29","start":"12:30","end":"12:55","room":"Room 105","title":"Agents Are the New API Consumers: Making Enterprise APIs Agent-Ready","type":"talk","event":["Apidays"],"track":["API & AI in Banking and finance"],"speakers":[{"n":"Dharanidharan Balasubramaniam","c":"Westpac","j":"Engineering Manager"}],"desc":"For years, we designed APIs for predictable callers: apps, integrations and developers who read the docs. AI agents change that. They decide at runtime which APIs to call, chain requests in unexpected ways, act on behalf of users, and can generate far more traffic than any human-driven app.\nThis session shares practical lessons from connecting AI agents to real enterprise APIs using Copilot Studio, Power Platform and the Model Context Protocol (MCP). We'll look at where traditional API assumptions break down and how to fix them. That covers designing an agent-facing layer with MCP and connectors, handling identity and delegated access, enforcing rate limits and guardrails, and building audit trails so every agent action is traceable and accountable.\nUsing an end-to-end document-processing scenario, you'll see the API design decisions that made the difference between a demo and a production-ready agent.\n\nKey takeaways:\n1.Why AI agents need different API design and governance than traditional clients\n2.How to use MCP and connectors to expose existing APIs to agents safely\n3.Patterns for identity, human-in-the-loop approvals and observability of agent actions\n4.A practical checklist for making your APIs \"\"agent-ready\"\""},{"id":4199,"day":"2026-10-29","start":"12:30","end":"12:55","room":"Room 104","title":"Telling Your Success Story: Illustrating Graph Impact Through Observability","type":"talk","event":["GraphQL Day"],"track":[],"speakers":[{"n":"Tim Hingston","c":"Apollo GraphQL","j":"Senior Staff Engineer"}],"desc":"Building a graph requires real up-front investment - designing schemas, deploying new infrastructure, and onboarding teams onto unfamiliar platforms costs precious time and energy. So why bother?\n\nYou’ve heard the success stories, from startups to enterprise companies, who’ve transformed their businesses by bringing them onto the graph. But don’t believe the hype - believe the data! YOUR data.\n\nThis talk is for anyone who wants to tell their own story, backed by their own data, about how the graph is driving business impact. We’ll illustrate the key signals for growth that can help you paint a compelling picture of value delivered, starting with some of the obvious data points and delving into deeper insights.\n\nYou’ll learn how to leverage GraphQL telemetry to track adoption of a graph platform over time. Come away with new tools to spot high-performing areas, friction signals, and other opportunities for improvement that will unlock even more value from your graph."},{"id":4061,"day":"2026-10-29","start":"13:00","end":"14:00","room":"","title":"Lunch Break / Networking / Expo","type":"break","event":["Apidays","Cloud Native Summit","GraphQL Day"],"track":[],"speakers":[],"desc":""},{"id":4163,"day":"2026-10-29","start":"14:00","end":"14:25","room":"Room 104","title":"Ask, Don't Fetch: Why GraphQL + MCP Is the Native Language of AI Agents","type":"talk","event":["GraphQL Day"],"track":[],"speakers":[{"n":"Akshay N Shaju","c":"IBM","j":"Senior Engineer"}],"desc":"REST APIs were designed for human-built clients that know exactly what URL to call. AI agents are different — they reason, plan, and decide what data they need at runtime. That mismatch is quietly becoming one of the biggest friction points in enterprise AI adoption.\n\nIn this session, we explore why GraphQL, paired with the Model Context Protocol (MCP), is uniquely positioned to become the standard interface layer for agentic systems. You'll learn how GraphQL's strong typing and introspection eliminate the hallucination risk of ambiguous REST contracts, how its precise data retrieval model solves the over-fetching and under-fetching problems that make LLM tool calls expensive and unpredictable, and how MCP builds on top of this to give AI agents a standardised, self-describing surface to discover and invoke capabilities — without custom glue code per integration.\n\nWalk away with a clear mental model of the GraphQL-MCP stack, a practical pattern for evolving existing REST endpoints into agent-ready GraphQL APIs, and real examples of AI agents successfully navigating complex multi-step queries using schema-declared tools.\n\nWhether you're an API architect, a backend engineer, or a developer building your first AI agent, this session gives you the vocabulary and the blueprint to make your APIs first-class citizens in the agentic world."},{"id":4255,"day":"2026-10-29","start":"14:00","end":"14:25","room":"Room 106","title":"Securing Azure Kubernetes Service (AKS): Network Policies, Private Clusters & Pod Security","type":"talk","event":["Cloud Native Summit"],"track":[],"speakers":[{"n":"Santhoshkumar\tAnandakrishnan","c":"Skyline Technology Aus","j":""},{"n":"Thiago \tShimada Ramos","c":"EnclaveAI Studio","j":""}],"desc":"AKS security is often treated as an extension of general Azure network security. Still, Kubernetes networking has its own model, its own failure modes, and its own set of tools — and getting it wrong can undermine every other security control in the environment.\n\nThis advanced session is built for platform and security engineers who need a comprehensive understanding of securing AKS networking.\n\nWe'll start by comparing AKS networking models — kubenet, Azure CNI, and CNI Overlay — and the security and scalability trade-offs of each.\n\nFrom there, we dive into Kubernetes Network Policies, comparing Azure's native Network Policy Manager with Calico, and showing how to enforce pod-to-pod and namespace-level segmentation that mirrors the micro-segmentation principles used at the VNet layer.\n\nWe'll cover private AKS cluster architecture in depth, including how API server access works when the control plane has no public endpoint, and the DNS considerations that come with it. The session also addresses identity: comparing Workload Identity (the modern, recommended approach) against legacy pod-managed identities, and why this choice matters for both security and operational simplicity.\n\nA demo session with cluster security settings."},{"id":4081,"day":"2026-10-29","start":"14:00","end":"14:25","room":"Room 101 + 102","title":"Beyond REST: Why MCP Is the Next Evolution of APIs (Live Demo with ClickHouse + AI)","type":"talk","event":["Apidays"],"track":["AI"],"speakers":[{"n":"Patrick Zhao","c":"7-Eleven Australia","j":"Domain Architect"}],"desc":"Modern APIs have been built around request/response patterns for decades—but AI-native applications are starting to challenge this model.\n\nIn this session, we explore the emergence of the Model Context Protocol (MCP) as a new way for systems to expose capabilities—not just endpoints. Instead of calling APIs, AI agents interact with tools, data, and services through structured context.\n\nThis talk includes a live demo showcasing:\n\nA ClickHouse-powered data layer for high-performance analytics\nLibreChat as an AI interface for interacting with systems\nMCP as the protocol layer enabling dynamic tool usage\n\nWe’ll walk through how MCP differs from REST and GraphQL, where it fits in existing architectures, and what this shift means for API gateways, observability, and platform design.\n\nAttendees will gain a practical understanding of how to start experimenting with MCP today, and why it may redefine how APIs are built and consumed in the near future."},{"id":4139,"day":"2026-10-29","start":"14:00","end":"14:25","room":"Room 103","title":"Change is only good when measured: building confidence through experimentation","type":"talk","event":["Apidays"],"track":["API & AI Observability"],"speakers":[{"n":"Fadila Fidina","c":"Atlassian","j":"Senior Software Engineer"}],"desc":"Shipping a new feature is easy. Knowing if it actually improved anything? That's the hard part.\n\nMany teams ship features based on intuition rather than evidence.\n\nThis makes it impossible to understand user behaviour or build confidence in product decisions.\n\nExperimentation is the only reliable way for engineering teams to uncover the true impact of the features they ship.\n\nIn this talk, I’ll walk through the experimentation lifecycle from an engineering perspective - forming a hypothesis, adding instrumentation, gathering data, and learning from the results - showing how teams can embed this process into their feature release practices at scale."},{"id":4295,"day":"2026-10-29","start":"14:00","end":"14:25","room":"Room 105","title":"Spec-Driven Development: Where Intent Meets Implementation","type":"talk","event":["Apidays"],"track":["Digital mindset"],"speakers":[{"n":"Pavithra Navaneeth","c":"Industry Professional","j":"Principal Engineer (DevSecOps) - Tech Product Owner"}],"desc":"Your API spec has been lying to you.\n\nIt was accurate on launch day. Then the code moved on, and nobody noticed. That was an annoyance when humans read it. It’s a much bigger problem now that AI agents read it, build from it, and believe every word.\n\nWhen AI agents can generate code, tests, mocks, and integrations in minutes, the scarce skill is no longer writing code. It’s saying precisely what you mean.\n\nThis talk explores spec-driven development: what it is, how it relates to intent-driven development, and what changes when the spec becomes the source of truth and implementation follows from it.\n\nFrameworks such as BMAD, Spec Kit, OpenSpec, and Kiro are making this real, but choosing a framework is only half the challenge. You still need to decide what the spec must say and how you’ll prove it was met.\n\nWe’ll tackle that through the Spec Stack:\n\n• Intent — goals, context, constraints, and tools\n\n• Behaviour — business rules and scenarios that can’t be misread\n\n• Contract — OpenAPI, AsyncAPI, and Arazzo as executable architecture\n\n• Evidence — evals, harnesses, and feedback loops that prove implementation matches intent\n\nYou’ll leave with a practical mental model, a one-page spec template, and a first step you can put to work Monday morning."},{"id":4084,"day":"2026-10-29","start":"14:30","end":"14:55","room":"Room 101 + 102","title":"From Figma to Production: Orchestrating Multi-Agent SDLCs","type":"talk","event":["Apidays"],"track":["AI"],"speakers":[{"n":"Niharika Kargudri","c":"Mantel Group","j":"Lead Software Engineer"}],"desc":"We’ve all been there: you get a Figma link, pass it to an AI tool, and hope for perfect code. Instead, you get broken edge cases, design mismatches, and a mountain of PR comments. The real headache starts when \"v2\" designs drop, and you’re stuck manually updating Jira tickets, documentation, and code just to keep everyone on the same page.\nThis session explains how we fixed this by moving away from simple prompts and building a connected step-by-step system. By creating specialized, automated tasks for each stage of development, we reduced the manual work per feature from 8 hours to just 24 minutes. This system is already running successfully in production and has been adopted by multiple teams.\n\nThis will cover:\nAutomating the Setup: How we use AI to instantly write technical specs for product managers and documentation for designers.\nIn-Repo Automation: Running automated tasks directly inside the codebase to set up components and write tests for developers and QA.\nHandling Design Updates: How the system automatically updates a shared team index in Confluence whenever a design changes, keeping everyone in sync.\nHuman Checkpoints: Why we built mandatory human reviews into the process to catch logic gaps before any code is generated."},{"id":4083,"day":"2026-10-29","start":"14:30","end":"14:55","room":"Room 103","title":"AI-assisted quality across the SDLC","type":"talk","event":["Apidays"],"track":["AI"],"speakers":[{"n":"Haritha Hari","c":"Autograb","j":"Senior Quality Coach"}],"desc":"AI-assisted development has changed the pace at which software gets built. Features that once took weeks are completed in days. Pull requests arrive faster, release cycles compress, and the volume of work reaching quality engineers has grown faster than teams can absorb it. The bottleneck has shifted — development velocity is no longer the constraint, but quality coverage is."},{"id":4256,"day":"2026-10-29","start":"14:30","end":"14:55","room":"Room 106","title":"The Build Passed and the Model Failed","type":"talk","event":["Cloud Native Summit"],"track":[],"speakers":[{"n":"Renaldi Gondosubroto","c":"Cloudetica Solutions","j":"Director"}],"desc":"A platform team had reached the point where changes to its AI application looked reassuringly similar to changes anywhere else in the software estate. Prompts lived in Git, model configuration was versioned, pull requests required review, automated tests ran on every change, and deployments moved through the normal delivery pipeline. One release passed every check and deployed without an infrastructure error. The application was still worse than the version it replaced. Nothing had crashed. Latency remained within its target and the APIs were healthy. The regression was behavioural. A relatively small change to the system prompt had improved performance on one class of requests while making another less reliable. The existing pipeline had been built to detect software failures, so from its perspective the release was completely healthy. This session follows the engineering response to that incident and the architecture that emerged from it. Instead of placing AI evaluation outside the delivery process as a periodic benchmarking exercise, the team made model behaviour part of the release contract. Prompt changes, model upgrades, retrieval configuration and tool definitions became versioned application dependencies with their own validation requirements. We will walk through the resulting delivery architecture, including representative evaluation datasets, deterministic checks around tool use and structured outputs, model-scored evaluation where deterministic assertions are insufficient, and regression thresholds that can prevent a change from progressing. The case study also covers how those evaluations were kept useful as the application changed, rather than allowing the test set to become a static collection that the system gradually learned to satisfy. The production side required a different set of controls. Offline evaluation reduced the number of bad releases, but it could not reproduce every real request. The deployment process therefore introduced shadow evaluation, limited canary releases and production feedback signals so that behavioural regressions could be detected without making every model change an all-or-nothing deployment. A significant part of the session focuses on the engineering problems that appear once this becomes CI/CD. Model outputs are not always deterministic, evaluation adds cost and latency to pipelines, and an aggregate score can hide a serious regression affecting a small but important class of requests. The architecture has to account for those properties instead of pretending an LLM test suite behaves like ordinary unit tests. The case study ultimately changed the team's definition of a successful deployment. Healthy infrastructure was no longer enough. An AI release also had to demonstrate that the behaviour users depended on had not materially regressed. Attendees will leave with a practical architecture for bringing prompts, models and behavioural evaluation into a cloud-native delivery pipeline without turning every pull request into a manual AI review."},{"id":4251,"day":"2026-10-29","start":"14:30","end":"14:55","room":"Room 104","title":"From Flinders St. to Federation: A GraphQL Deep Dive","type":"talk","event":["GraphQL Day"],"track":[],"speakers":[{"n":"Eeshaan Sawant","c":"Independant","j":""}],"desc":"G'day Melbourne! Come join us on this tram — it is an all-stops service, a 50-minute ride that starts at the very first stop and doesn't get off until Federation, skipping nothing in between. No prior GraphQL knowledge needed to climb aboard!\n\nAs GraphQL continues to mature as an API for Humans and Agents, we regularly come across developers who have seldom heard of GraphQL, and far fewer know how it actually works, or the problem it solves.\n\nThe tram will set off with the basics — Whats and Whys of GraphQL, and ride stops that make up every GraphQL API: the schemas and the queries, how mutations work, the versatility of resolvers, subscriptions for real-time updates, the infamous N+1 problem, schema-stitching and finally Federation, taking you through the whole GraphQL tram route, end-to-end.\n\nTap your Mykis and sit tight: you'll step off with a clear mental model of how GraphQL fits together, why it's the API to watch in the AI era, and a map to explore the rest on your own."},{"id":4082,"day":"2026-10-29","start":"14:30","end":"14:55","room":"Room 105","title":"From Microservices to Multi-Agent Systems","type":"talk","event":["Apidays"],"track":["Semantic Layer"],"speakers":[{"n":"Jeff\tIshar","c":"Auth0","j":"Solutions Architect"}],"desc":"AI agents are a new kind of API consumer, calling the same services you already run but behaving very differently. This talk compares how rate limiting, security, observability and reliability change when the caller is an agent, and what to do about it, using the API platform you already have. It is vendor-neutral and suits technical and non-technical audiences."},{"id":4085,"day":"2026-10-29","start":"15:00","end":"15:25","room":"Room 103","title":"Future of SREs with A(P)I","type":"talk","event":["Apidays"],"track":["API & AI Observability"],"speakers":[{"n":"Jay\tDesai","c":"Datadog","j":"Senior Solutions Engineer"}],"desc":"Modern SRE isn’t just about reacting to alerts — it’s about designing systems that are observable, programmable, and increasingly autonomous.\n\nIn this talk, we’ll explore the full Incident Management lifecycle, examine where humans struggle under scale, and discuss how AI and APIs together unlock a new model of reliability engineering.\n\nThe future of SRE isn’t just AI-powered — it’s API-driven.\nWhen observability, automation, and AI combine, reliability becomes programmable."},{"id":4086,"day":"2026-10-29","start":"15:00","end":"15:25","room":"Room 101 + 102","title":"How to Build Agentic AI That Actually Works","type":"talk","event":["Apidays"],"track":["AI"],"speakers":[{"n":"Nilesh Gule","c":"Avanade","j":"Senior Cloud Solutions Architect"}],"desc":""},{"id":4257,"day":"2026-10-29","start":"15:00","end":"15:25","room":"Room 106","title":"Agentic Platform Engineering on Kubernetes — From Design to Operations with AI in the Loop","type":"talk","event":["Cloud Native Summit"],"track":[],"speakers":[{"n":"Frank Fan","c":"Amazon Web Services","j":"Solution Architect"}],"desc":"Platform engineering teams are stretched thin — the Kubernetes ecosystem spans GitOps, security, observability, cost, and networking, yet most platforms are maintained by a small team that becomes the bottleneck for every decision. APEX (Agentic Platform Engineering eXperience) applies AI agents across the full lifecycle: designing architectures, generating guardrail-validated Terraform, and diagnosing live operational issues — all steered by expert-authored SKILL.md files that encode best practices rather than generic output.\n\nIn this session, we'll demonstrate how a progressive permission model expands from read-only to autonomous operation as trust builds. Attendees will leave with a practical framework for introducing agentic workflows without sacrificing human oversight or operational discipline."},{"id":4188,"day":"2026-10-29","start":"15:00","end":"15:25","room":"Room 105","title":"Beyond REST: Evolving Arazzo for Real-World Agentic Workflows","type":"talk","event":["Apidays"],"track":["Semantic Layer"],"speakers":[{"n":"Naresh Jain","c":"Specmatic","j":"Founder & CEO"}],"desc":"A real-world business workflow rarely stays within the boundaries of a single API style.\n\nAn order might begin with an HTTP API described using OpenAPI, trigger an event described using AsyncAPI, invoke a Protobuf RPC service, query data through GraphQL, and eventually receive an asynchronous notification. Agentic applications make this even more important: an agent needs to understand not just individual API operations, but how capabilities across heterogeneous systems can be composed into a meaningful workflow.\n\nArazzo was created to describe sequences of API calls and the dependencies between them. But what happens when the next step isn’t another OpenAPI operation?\n\nIn this talk, we’ll look at how Arazzo is evolving to support heterogeneous API interaction models. Drawing on the work to introduce AsyncAPI, Protocol Buffer RPC and GraphQL support into the Arazzo Specification, we’ll explore some of the surprisingly difficult design questions that emerge when REST-style request/response assumptions disappear.\n\nHow do you represent send and receive operations in an event-driven system? What does a workflow step mean when an RPC is server-streaming or bidirectional? How should GraphQL queries, mutations and subscriptions participate in a workflow? And how can we add these capabilities without turning Arazzo into a collection of protocol-specific special cases?\n\nWe’ll use these questions to explore a broader idea: Arazzo can become a protocol-independent description of how API capabilities are composed to accomplish an outcome.\n\nThat has implications beyond API documentation and testing. For AI agents, an Arazzo workflow can provide something increasingly valuable: an explicit, machine-readable description of which capabilities to invoke, in what sequence, how data flows between them, and what successful execution looks like.\n\nRather than asking agents to infer workflows from a collection of disconnected API descriptions, we can start making the workflow itself part of the contract."},{"id":4087,"day":"2026-10-29","start":"15:30","end":"15:55","room":"Room 101 + 102","title":"From REST APIs to AI Agents: Lessons from 15 Years of Building Enterprise API Platforms","type":"talk","event":["Apidays"],"track":["AI"],"speakers":[{"n":"Prasanna Dangalla","c":"Xeople","j":"Senior Software Engineer — API / WSO2 Platform Lead"}],"desc":"Over the last fifteen years, enterprise APIs have undergone multiple waves of transformation from SOAP services and REST APIs to cloud native architectures, microservices, GraphQL, event driven systems, and now AI agents. Each generation has introduced new technologies, architectural patterns, and ways of thinking. Yet despite all this change, the core engineering principles behind successful API platforms have remained remarkably consistent.\n\nThis session explores the evolution of our industry through the lens of someone who has spent the last 15 years building enterprise API platforms.\n\nDrawing on real-world experience building API gateways, designing enterprise integrations, supporting global production systems including nearly a decade contributing to the WSO2 API Manager core engineering team and more recently developing healthcare integration platforms, this talk connects the lessons of the past with the challenges of the AI era.\n\nRather than treating AI as a replacement for existing architectures, we'll explore how AI agents represent a new generation of API consumers—and what that means for API design, security, governance, observability, developer experience, and platform engineering.\n\nAttendees will leave with practical lessons from multiple generations of API evolution, a deeper understanding of why the fundamental principles of enterprise API engineering remain timeless, and a practical roadmap for preparing existing API platforms for an AI-driven future.\n\nLearning Outcomes\nAttendees will learn:\n\nHow enterprise APIs have evolved over the last 15 years.\n\nWhich engineering principles have remained constant despite changing technologies.\n\nWhy AI agents represent a new class of API consumer rather than a replacement for APIs.\n\nHow API platforms should evolve to support AI driven applications.\n\nPractical lessons from designing, building, and operating enterprise API platforms at scale.\n\nWhy This Talk?\nWhile many sessions explore the possibilities of AI, this presentation focuses on the engineering journey that has led us here.\n\nRather than concentrating on AI hype or theoretical concepts, it connects fifteen years of enterprise API engineering with the next generation of API consumers.\n\nAttendees will hear practical stories from real production environments, learn architectural lessons that remain relevant regardless of technology trends, and understand how existing enterprise API platforms can evolve to support AI rather than be replaced by it."},{"id":4377,"day":"2026-10-29","start":"15:30","end":"15:55","room":"Room 103","title":"The Architecture of Influence: The Human Skills Nobody Teaches Architects","type":"talk","event":["Apidays"],"track":["Architecture for Strategy"],"speakers":[{"n":"Kimche Limpahan","c":"SkyCity Adelaide","j":"Enterprise Solutions Architect"}],"desc":"We teach architects how to design systems, technologies and solutions—but rarely how to navigate the human dynamics that determine whether those solutions actually succeed.\n\nAfter around ten years working across solution and enterprise architecture, I have learned that some of the hardest architecture problems are not technical. They involve influence, trust, communication, competing perspectives, resistance to change and establishing credibility in complex environments.\n\nAs a woman in technology who is often perceived as younger than I am, I have also experienced the challenge of establishing credibility before having the opportunity to demonstrate expertise. These experiences have fundamentally shaped how I approach architecture and leadership.\n\nThis talk explores the human side of architecture: how emotional intelligence, authenticity, situational awareness and communication can become practical tools for architects.\n\nThrough real-world experiences and lessons from transformation environments, I will explore how architects can read a room, challenge ideas without creating resistance, communicate across technical and business audiences, build trust, and influence decisions without relying solely on positional authority.\n\nBecause ultimately, architecture is not just about designing technology.\n\nIt is about helping people make complex decisions and move toward change together."},{"id":4189,"day":"2026-10-29","start":"15:30","end":"15:55","room":"Room 105","title":"Durable Execution: An Awakening","type":"talk","event":["Apidays"],"track":["Semantic Layer"],"speakers":[{"n":"Gaurav Thadani","c":"Temporal Technologies","j":"Senior Developer Success Engineer"}],"desc":"We build software to deliver reliable business operations. Yet in doing so, we often over-engineer the same repeatable, complex, and mundane patterns, paying a hidden \"\"complexity tax\"\" that grows with every system we scale. As Desmond Tutu said: \"\"There is only one way to eat an elephant: one bite at a time.\"\" But which bites matter?\n\nDistributed systems force us to repeatedly solve fundamental challenges: retries that don't survive process restarts, microservices and serverless fragmentation, tracking business state across services, the local development nightmare, and evolving live applications under accumulated complexity. Is it worth reinventing these patterns before building actual business value? What if these concerns could be managed for you?\n\nDurable Execution — the Temporal Workflow (OSS, MIT Licensed) — is that awakening. Not a new shiny tool, but a 20-year refinement of a powerful idea. In this session, we'll explore how Temporal addresses these challenges and helps you stop paying the complexity tax."},{"id":4254,"day":"2026-10-29","start":"15:30","end":"15:55","room":"Room 106","title":"Why can't I have more tokens Rob? Using agentgateway to keep your AI usage under control.","type":"talk","event":["Cloud Native Summit"],"track":[],"speakers":[{"n":"Akshay Adsul","c":"Solo.io","j":"APAC Lead CS Engineering"},{"n":"Kasun \tTalwatta","c":"Solo.io","j":"Principal Solutions Architect"}],"desc":"Industry trends are pushing companies to use more AI, often \"\"at all costs\"\". However, once CFOs start seeing the bills, the reality of \"\"at all costs\"\" really starts to sink in, and we start to turn to more pragmatic approaches to AI budgets.\n\nThe first step to managing AI spend is to have good monitoring in place. You need to know who your big users are, and which projects or workflows are draining your token budget. The answers can often be surprising!\n\nIn this talk, I'll walk through a live demo of how you can set up monitoring across multiple providers, with centralized access, using agentgateway. We'll talk about what metrics are important to track, and some gateway patterns we can use to keep costs from becoming unmanageable, like token-based rate-limiting.\n\nThe full step-by-step demo will be available on Github and the audience can optionally follow along on their own machines."},{"id":4062,"day":"2026-10-29","start":"16:00","end":"16:20","room":"","title":"Coffee Break / Networking / Expo","type":"break","event":["Apidays","Cloud Native Summit"],"track":[],"speakers":[],"desc":""},{"id":4286,"day":"2026-10-29","start":"16:20","end":"16:45","room":"Room 106","title":"TBA","type":"talk","event":["Cloud Native Summit"],"track":[],"speakers":[],"desc":""},{"id":4227,"day":"2026-10-29","start":"16:20","end":"16:45","room":"Room 101 + 102","title":"Agents don't take no: gateway controls for non-human traffic","type":"talk","event":["Apidays"],"track":["AI"],"speakers":[{"n":"Rajeev Ramani","c":"ItFromBit","j":"Founder & Principal Consultant"}],"desc":"Most APIs and portals were built assuming a person, or a well-behaved integration, is on the other end. Autonomous agents break that assumption. Tell an agent \"\"no\"\" and it doesn't give up; it looks for another door, and often finds one where the UI is protected but the data paths behind it are not. ASD's recent guidance is blunt: the model can't reliably protect itself, so the controls have to sit around it.\n\nDrawing on 20 years of building and running API gateways (Apigee, Kong, Envoy), I'll argue that the gateway is where most of those controls already belong, and that it has to work in both directions. Inbound: authentication on every data path, not just the UI; identifying agent traffic; behavioural rate limits; retiring legacy endpoints; and audit logs you can actually query. Outbound: an AI/MCP gateway with tool allowlists, budgets and human approval for your own agents.\n\nThis isn't a product talk. Attendees leave with a seven-point checklist they can run against their own platform next week, plus the blind spots a gateway won't cover."},{"id":4226,"day":"2026-10-29","start":"16:20","end":"16:45","room":"Room 103","title":"How can we analyse thousands of comments to derive reliable insights? Lessons from analysing student feedback at scale.","type":"talk","event":["Apidays"],"track":["API & AI Observability"],"speakers":[{"n":"Anastasiia Mironova","c":"Monash University","j":"Senior Performance Analyst"},{"n":"Afzal Khan","c":"Monash University","j":"Senior Performance Analyst"}],"desc":"Universities collect large volumes of student feedback, but much of its value is locked inside free-text comments. Generative AI creates an opportunity to analyse this feedback at scale. However, the quality of the results depends on the approach used, and determining whether those results can be trusted is an additional challenge.\nThis talk presents a real-world approach developed by professional staff at Monash University to prepare and analyse student comments from the Student Evaluation of Teaching and Units (SETU).\nWe will look at how generative AI can be used to decompose complex comments containing multiple ideas into individual feedback points, classify those points, and aggregate them to identify patterns in student feedback. We will also examine how the reliability of the output can be evaluated.\nUsing our experience with student feedback as a case study, we will discuss the practical challenges we encountered, the approaches we used to assess the results, and what we learned about turning unstructured human feedback into structured information that can support analysis."},{"id":4296,"day":"2026-10-29","start":"16:20","end":"16:50","room":"Room 105","title":"How to build an intelligent, automated, and governed business","type":"talk","event":["Apidays"],"track":["Semantic Layer"],"speakers":[{"n":"Nakul Deshmukh","c":"xysec","j":"Founder"},{"n":"Jamie Le","c":"DreamIT","j":"CEO"}],"desc":"We have intelligence on tap. An amalgamation of everyone's thoughts at our fingertips, and making decisions on our behalf.\nWhile AI keeps improving, its capabilities are astounding, and dangerous. The skill needed to harness this is proportional to the job that needs doing - so how do you keep pace with AI, how can you use AI in business in regulated spaces, and what are the opportunities in Australia right now to enable sovereign capabilities for businesses under obligations."},{"id":4287,"day":"2026-10-29","start":"16:50","end":"16:50","room":"","title":"End of Day 2","type":"break","event":["Apidays","Cloud Native Summit"],"track":[],"speakers":[],"desc":""}]</script>
+<script>
+(function () {
+  const SESSIONS = JSON.parse(document.getElementById('data').textContent);
+  const SLOT = () => parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--slot')) || 20;
+  const DAYS = { '2026-10-28': 'Wed 28 Oct', '2026-10-29': 'Thu 29 Oct' };
+  const EV = {
+    'Apidays': 'a', 'Cloud Native Summit': 'c', 'API Economy Summit': 'e',
+    'The Executive AI Security Forum': 's', 'GraphQL Day': 'g'
+  };
+  const EV_SHORT = {
+    'Apidays': 'Apidays', 'Cloud Native Summit': 'Cloud Native Summit', 'API Economy Summit': 'API Economy Summit',
+    'The Executive AI Security Forum': 'Exec AI Security Forum', 'GraphQL Day': 'GraphQL Day'
+  };
+  const BADGE = { keynote: 'Keynote', workshop: 'Workshop', facilitated_roundtable: 'Roundtable', opening_remarks: 'Opening' };
+  const HIDE_TRACK = new Set(['keynote', 'The Executive AI Security Forum']);
+  const MAIN_STAGE = 'Room 109 + 110';
+  const STORE = 'apidays-au-2026-picks';
+
+  const toMin = (hm) => { const [h, m] = hm.split(':').map(Number); return h * 60 + m; };
+  const fmt = (m) => String(Math.floor(m / 60)).padStart(2, '0') + ':' + String(m % 60).padStart(2, '0');
+  SESSIONS.forEach((s) => {
+    s._s = toMin(s.start); s._e = toMin(s.end);
+    s._ev = EV[s.event[0]] || 'a';
+    s._track = s.track.filter((t) => !HIDE_TRACK.has(t));
+    s._hay = [s.title, s.room, s.event.join(' '), s.track.join(' '),
+      s.speakers.map((p) => p.n + ' ' + p.c).join(' ')].join(' ').toLowerCase();
+  });
+
+  // ---- picks (per device) ----
+  let picks = new Set();
+  try { picks = new Set(JSON.parse(localStorage.getItem(STORE) || '[]')); } catch (e) { /* storage unavailable */ }
+  const savePicks = () => { try { localStorage.setItem(STORE, JSON.stringify([...picks])); } catch (e) { /* ignore */ } };
+
+  // ---- Melbourne clock ----
+  function melbourneNow() {
+    const parts = new Intl.DateTimeFormat('en-CA', {
+      timeZone: 'Australia/Melbourne', year: 'numeric', month: '2-digit', day: '2-digit',
+      hour: '2-digit', minute: '2-digit', hourCycle: 'h23'
+    }).formatToParts(new Date());
+    const g = (t) => parts.find((p) => p.type === t).value;
+    return { date: g('year') + '-' + g('month') + '-' + g('day'), min: Number(g('hour')) * 60 + Number(g('minute')) };
+  }
+
+  const grid = document.getElementById('grid');
+  const scroller = document.getElementById('scroller');
+  const q = document.getElementById('q');
+  const pickBtn = document.getElementById('picks');
+  let day = melbourneNow().date === '2026-10-29' ? '2026-10-29' : '2026-10-28';
+  let onlyPicks = false;
+  let range = null;
+  let nowEl = null;
+
+  function el(tag, cls, text) {
+    const n = document.createElement(tag);
+    if (cls) n.className = cls;
+    if (text != null) n.textContent = text;
+    return n;
+  }
+  function place(n, row, span, col, colEnd) {
+    n.style.gridRow = row + ' / span ' + span;
+    n.style.gridColumn = colEnd ? col + ' / ' + colEnd : String(col);
+    return n;
+  }
+  function roomOrder(a, b) {
+    if (a === MAIN_STAGE) return -1;
+    if (b === MAIN_STAGE) return 1;
+    return parseInt(a.replace(/\D+/, ''), 10) - parseInt(b.replace(/\D+/, ''), 10);
+  }
+  function assignLanes(list) {
+    let cluster = [], laneEnds = [], clusterEnd = -1;
+    const flush = () => { cluster.forEach((s) => { s._lanes = laneEnds.length; }); cluster = []; laneEnds = []; clusterEnd = -1; };
+    list.forEach((s) => {
+      if (cluster.length && s._s >= clusterEnd) flush();
+      let i = laneEnds.findIndex((e) => e <= s._s);
+      if (i < 0) { i = laneEnds.length; laneEnds.push(s._e); } else { laneEnds[i] = s._e; }
+      s._lane = i; cluster.push(s); clusterEnd = Math.max(clusterEnd, s._e);
+    });
+    if (cluster.length) flush();
+  }
+  function speakerLine(s) {
+    return s.speakers.map((p) => p.c ? p.n + ' · ' + p.c : p.n).join('; ');
+  }
+
+  function render() {
+    const slot = SLOT();
+    const list = SESSIONS.filter((s) => s.day === day);
+    const breaks = list.filter((s) => !s.room);
+    const talks = list.filter((s) => s.room);
+    const rooms = [...new Set(talks.map((s) => s.room))].sort(roomOrder);
+    const start = Math.floor(Math.min(...list.map((s) => s._s)) / 15) * 15;
+    const end = Math.ceil((Math.max(...list.map((s) => s._e)) + 5) / 5) * 5;
+    const rows = (end - start) / 5;
+    range = { start, end };
+    const rowOf = (m) => (m - start) / 5 + 2;
+
+    // Rooms with two talks in the same slot get a wider column so both stay readable.
+    const weight = {};
+    rooms.forEach((r) => {
+      const inRoom = talks.filter((s) => s.room === r).sort((a, b) => a._s - b._s || a.id - b.id);
+      assignLanes(inRoom);
+      const lanes = Math.max(...inRoom.map((s) => s._lanes));
+      weight[r] = r === MAIN_STAGE ? 0.85 : lanes > 1 ? 1.4 : 1;
+    });
+    grid.textContent = '';
+    grid.style.gridTemplateColumns = 'var(--tc) ' + rooms.map((r) =>
+      'minmax(calc(var(--colmin) * ' + weight[r] + '), ' + weight[r] + 'fr)').join(' ');
+    grid.style.gridTemplateRows = 'auto repeat(' + rows + ', var(--slot))';
+    grid.style.minWidth = 'calc(var(--tc) + ' + rooms.reduce((a, r) => a + weight[r], 0).toFixed(2) + ' * var(--colmin))';
+
+    // header row
+    grid.appendChild(place(el('div', 'corner', 'AEDT'), 1, 1, 1));
+    rooms.forEach((r, i) => {
+      const h = place(el('div', 'rh'), 1, 1, i + 2);
+      h.appendChild(el('b', null, r));
+      const evs = [...new Set(talks.filter((s) => s.room === r).map((s) => s.event[0]))];
+      if (r === MAIN_STAGE) {
+        const c = el('span', 'chip', 'Opening & keynotes'); c.dataset.ev = 'a'; h.appendChild(c);
+      } else {
+        evs.forEach((e) => { const c = el('span', 'chip', EV_SHORT[e] || e); c.dataset.ev = EV[e] || 'a'; h.appendChild(c); });
+      }
+      grid.appendChild(h);
+      grid.appendChild(place(el('div', 'vc'), 2, rows, i + 2));
+    });
+
+    // time rail and guide lines
+    for (let t = start; t < end; t += 15) {
+      const span = Math.min(3, (end - t) / 5);
+      const kind = t % 60 === 0 ? 'h' : t % 30 === 0 ? 'half' : 'q';
+      grid.appendChild(place(el('div', 'tm ' + kind, fmt(t)), rowOf(t), span, 1));
+      const hl = place(el('div', 'hl ' + kind), rowOf(t), 1, 2, -1);
+      grid.appendChild(hl);
+    }
+
+    // breaks
+    breaks.forEach((b) => {
+      const zero = b._e <= b._s;
+      const n = place(el('div', 'band' + (zero ? ' end' : '')), rowOf(b._s), zero ? 1 : (b._e - b._s) / 5, 2, -1);
+      const label = el('span', null, b.title.replace(/\s*\/\s*/g, ' · '));
+      label.appendChild(el('i', null, zero ? b.start : b.start + '–' + b.end));
+      n.appendChild(label);
+      grid.appendChild(n);
+    });
+
+    // sessions
+    rooms.forEach((r, ci) => {
+      const inRoom = talks.filter((s) => s.room === r).sort((a, b) => a._s - b._s || a.id - b.id);
+      inRoom.forEach((s) => grid.appendChild(sessionEl(s, rowOf(s._s), Math.max(1, (s._e - s._s) / 5), ci + 2, slot)));
+    });
+
+    nowEl = el('div', 'now');
+    nowEl.appendChild(el('span'));
+    nowEl.hidden = true;
+    grid.appendChild(nowEl);
+    updateNow();
+    applyFilter();
+  }
+
+  function sessionEl(s, row, span, col, slot) {
+    const n = place(el('div', 's'), row, span, col);
+    n.dataset.ev = s._ev;
+    n.dataset.id = s.id;
+    n.tabIndex = 0;
+    n.setAttribute('role', 'button');
+    n.setAttribute('aria-label', s.start + ' to ' + s.end + ', ' + s.room + ': ' + s.title + (s.speakers.length ? ', ' + speakerLine(s) : ''));
+    n.style.setProperty('--lane', s._lane || 0);
+    n.style.setProperty('--lanes', s._lanes || 1);
+    const tba = /^tba$/i.test(s.title.trim());
+
+    const h = span * slot - 16;
+    if (h < 34) {
+      n.classList.add('mini');
+      const t = el('div', 'ttl');
+      t.appendChild(el('b', null, s.start));
+      t.appendChild(document.createTextNode(s.title));
+      n.appendChild(t);
+    } else {
+      const meta = el('div', 'meta');
+      meta.appendChild(el('span', null, s.start + '–' + s.end));
+      if (BADGE[s.type]) meta.appendChild(el('span', 'badge', BADGE[s.type]));
+      n.appendChild(meta);
+      let avail = h - 15;
+      const showSpk = s.speakers.length > 0 && avail >= 31;
+      if (showSpk) avail -= 15;
+      const track = s._track[0];
+      const showTrk = !!track && avail >= 46;
+      if (showTrk) avail -= 14;
+      const lines = Math.max(1, Math.min(6, Math.floor(avail / 16)));
+      const t = el('div', 'ttl' + (tba ? ' tba' : ''), tba ? 'To be announced' : s.title);
+      t.style.webkitLineClamp = String(lines);
+      t.style.lineClamp = String(lines);
+      n.appendChild(t);
+      if (showSpk) n.appendChild(el('div', 'spk', speakerLine(s)));
+      if (showTrk) n.appendChild(el('div', 'trk', track));
+      const star = el('button', 'star');
+      star.type = 'button';
+      n.appendChild(star);
+    }
+    paintPick(n, s.id);
+    return n;
+  }
+
+  function paintPick(n, id) {
+    const on = picks.has(id);
+    n.classList.toggle('picked', on);
+    const star = n.querySelector('.star');
+    if (star) {
+      star.textContent = on ? '★' : '☆';
+      star.setAttribute('aria-label', on ? 'Remove from my picks' : 'Save to my picks');
+      star.setAttribute('aria-pressed', on ? 'true' : 'false');
+    }
+  }
+  function togglePick(id) {
+    if (picks.has(id)) picks.delete(id); else picks.add(id);
+    savePicks();
+    grid.querySelectorAll('.s[data-id="' + id + '"]').forEach((n) => paintPick(n, id));
+    updatePickCount();
+    applyFilter();
+  }
+  function updatePickCount() {
+    document.getElementById('pickcount').textContent = String(SESSIONS.filter((s) => picks.has(s.id) && s.day === day).length);
+  }
+
+  function applyFilter() {
+    const term = q.value.trim().toLowerCase();
+    grid.querySelectorAll('.s').forEach((n) => {
+      const s = byId.get(Number(n.dataset.id));
+      const hit = (!term || s._hay.includes(term)) && (!onlyPicks || picks.has(s.id));
+      n.classList.toggle('dim', !hit);
+    });
+  }
+
+  function updateNow() {
+    if (!nowEl || !range) return;
+    const now = melbourneNow();
+    const show = now.date === day && now.min >= range.start && now.min <= range.end;
+    nowEl.hidden = !show;
+    if (!show) return;
+    const offset = now.min - range.start;
+    nowEl.style.gridRow = String(Math.floor(offset / 5) + 2);
+    nowEl.style.transform = 'translateY(' + ((offset % 5) / 5) * SLOT() + 'px)';
+    nowEl.firstChild.textContent = fmt(now.min);
+  }
+
+  // ---- dialog ----
+  const byId = new Map(SESSIONS.map((s) => [s.id, s]));
+  const dlg = document.getElementById('dlg');
+  const dStar = document.getElementById('d-star');
+  let openId = null;
+  function paintDialogStar() {
+    dStar.textContent = picks.has(openId) ? '★ Saved to my picks' : '☆ Save to my picks';
+    dStar.classList.toggle('primary', !picks.has(openId));
+  }
+  function openSession(id) {
+    const s = byId.get(id);
+    openId = id;
+    document.getElementById('d-meta').textContent = DAYS[s.day] + ' · ' + s.start + '–' + s.end + ' · ' + s.room;
+    document.getElementById('d-title').textContent = s.title;
+    const chips = document.getElementById('d-chips');
+    chips.textContent = '';
+    const ec = el('span', 'chip', EV_SHORT[s.event[0]] || s.event[0]); ec.dataset.ev = s._ev; chips.appendChild(ec);
+    if (BADGE[s.type]) chips.appendChild(el('span', 'chip plain', BADGE[s.type]));
+    s._track.forEach((t) => chips.appendChild(el('span', 'chip plain', t)));
+    const spk = document.getElementById('d-spk');
+    spk.textContent = '';
+    s.speakers.forEach((p) => {
+      const li = el('li');
+      li.appendChild(el('b', null, p.n));
+      const role = [p.j, p.c].filter(Boolean).join(', ');
+      if (role) li.appendChild(el('span', null, role));
+      spk.appendChild(li);
+    });
+    spk.hidden = !s.speakers.length;
+    const desc = document.getElementById('d-desc');
+    desc.textContent = '';
+    desc.classList.toggle('empty', !s.desc);
+    if (s.desc) s.desc.split(/\n\n+/).forEach((para) => desc.appendChild(el('p', null, para)));
+    else desc.appendChild(el('p', null, 'No description on the official agenda.'));
+    paintDialogStar();
+    if (typeof dlg.showModal === 'function') dlg.showModal(); else dlg.setAttribute('open', '');
+    dlg.scrollTop = 0;
+  }
+  function closeDialog() { if (typeof dlg.close === 'function') dlg.close(); else dlg.removeAttribute('open'); }
+  dStar.addEventListener('click', () => { togglePick(openId); paintDialogStar(); });
+  document.getElementById('d-close').addEventListener('click', closeDialog);
+  dlg.addEventListener('click', (e) => { if (e.target === dlg) closeDialog(); });
+
+  // ---- events ----
+  grid.addEventListener('click', (e) => {
+    const star = e.target.closest('.star');
+    const card = e.target.closest('.s');
+    if (!card) return;
+    const id = Number(card.dataset.id);
+    if (star) { e.stopPropagation(); togglePick(id); return; }
+    openSession(id);
+  });
+  grid.addEventListener('keydown', (e) => {
+    if (e.target.classList && e.target.classList.contains('s') && (e.key === 'Enter' || e.key === ' ')) {
+      e.preventDefault();
+      openSession(Number(e.target.dataset.id));
+    }
+  });
+  document.querySelectorAll('.tabs button').forEach((b) => b.addEventListener('click', () => {
+    if (b.dataset.day === day) return;
+    day = b.dataset.day;
+    document.querySelectorAll('.tabs button').forEach((x) => x.setAttribute('aria-selected', x === b ? 'true' : 'false'));
+    render();
+    updatePickCount();
+    scroller.scrollTo({ top: 0, left: 0 });
+    scrollToNow();
+  }));
+  q.addEventListener('input', applyFilter);
+  pickBtn.addEventListener('click', () => {
+    onlyPicks = !onlyPicks;
+    pickBtn.setAttribute('aria-pressed', onlyPicks ? 'true' : 'false');
+    applyFilter();
+  });
+
+  function scrollToNow() {
+    if (nowEl && !nowEl.hidden) {
+      const top = nowEl.offsetTop - 90;
+      scroller.scrollTop = Math.max(0, top);
+    }
+  }
+
+  document.querySelectorAll('.tabs button').forEach((x) => x.setAttribute('aria-selected', x.dataset.day === day ? 'true' : 'false'));
+  render();
+  updatePickCount();
+  scrollToNow();
+  setInterval(updateNow, 60000);
+})();
+</script>
+</body>
+</html>
